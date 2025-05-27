@@ -1,0 +1,26 @@
+@import './base.css';
+
+#app {
+  height: 100vh;
+  max-width: 100vw; /* Begrenzt auf Viewport-Breite */
+  margin: 0 auto;
+  padding: 2rem;
+  font-weight: normal;
+  overflow-y: auto;
+  overflow-x: hidden; /* Verhindert horizontales Scrollen */
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    place-items: center;
+    overflow: hidden; /* Sicherstellen, dass kein Scrollen erlaubt ist */
+  }
+
+  #app {
+    display: flex; /* Grid kann durch zu breite Inhalte scrollen */
+    flex-direction: column;
+    padding: 2rem; /* Optional: auf z. B. 1rem reduzieren */
+    max-width: 100vw;
+  }
+}
