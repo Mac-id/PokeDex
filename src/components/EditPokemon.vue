@@ -1,102 +1,155 @@
+<!-- 
+  Bearbeitungsdialog für Pokémon
+  Verantwortlich für:
+  - Anzeige und Bearbeitung von Pokémon-Daten
+  - Anzeige zusätzlicher Details (Attacken, Sprites)
+  - Speichern/Abbrechen-Funktionalität
+-->
 <script setup lang="ts">
-// Vue-spezifische Funktionen importieren
 import { ref, watch, onMounted } from "vue";
 import type { Pokemon } from "../types";
 
-// Props definieren: erwartet ein initiales Pokémon-Objekt
+// Props-Definition
 const props = defineProps<{
   initialPokemon: Pokemon;
+  yourTeam: Pokemon[];
+  opponentTeam: Pokemon[];
 }>();
 
-// Events definieren, die nach außen gesendet werden können
+// Event-Emitter
 const emit = defineEmits<{
-  (e: "save", pokemon: Pokemon): void; // Beim Speichern
-  (e: "cancel"): void; // Beim Abbrechen
+  (e: "save", pokemon: Pokemon): void;
+  (e: "cancel"): void;
+  (e: "add-to-team", pokemon: Pokemon): void;
+  (e: "add-to-opponent", pokemon: Pokemon): void;
 }>();
 
-// Lokaler Zustand des Formulars – beginnt als Kopie des übergebenen Pokémon-Objekts
+// Reaktive Formulardaten
 const formData = ref<Pokemon>({ ...props.initialPokemon });
-
-// Speichert den ursprünglichen Namen (z. B. für Überschrift)
 const originalName = ref(props.initialPokemon.name);
 
-// Liste der verfügbaren Sprites (Bilder) für das Pokémon
+// Pokémon-Details
+const moves = ref<{ name: string; power: number; damageClass: string; type: string }[]>([]);
 const sprites = ref<string[]>([]);
-
-// Der aktuell ausgewählte Sprite (Bild)
 const selectedSprite = ref("");
 
-// Wird aufgerufen, wenn auf "Speichern" geklickt wird
-const handleSave = () => {
-  emit("save", formData.value); // sendet das aktualisierte Pokémon zurück an die Elternkomponente
-};
-
-// Wird aufgerufen, wenn auf "Abbrechen" geklickt wird
-const handleCancel = () => {
-  emit("cancel"); // teilt der Elternkomponente mit, dass der Vorgang abgebrochen wurde
-};
-
-// Lädt zusätzliche Sprites für das Pokémon von der PokéAPI
-async function fetchSprites() {
+const handleSave = () => emit("save", formData.value);
+const handleCancel = () => emit("cancel");
+const handleAddToTeam = () => emit("add-to-team", formData.value);
+const handleAddToOpponent = () => emit("add-to-opponent", formData.value);
+/**
+ * Lädt zusätzliche Pokémon-Daten von der API
+ * - Sprites
+ * - Attacken
+ */
+async function fetchPokemonData() {
   try {
     const response = await fetch(
       `https://pokeapi.co/api/v2/pokemon/${props.initialPokemon.name.toLowerCase()}`
     );
     const data = await response.json();
 
+    // Sprites sammeln
     const spriteList = [];
     const spriteData = data.sprites;
-
-    // Extrahiert nur die Sprite-URLs (z. B. front_default, back_default usw.)
     for (const key in spriteData) {
       if (spriteData[key] && typeof spriteData[key] === "string") {
         spriteList.push(spriteData[key]);
       }
     }
-
-    // Filtert leere Einträge und speichert die Liste
     sprites.value = spriteList.filter(Boolean);
+    selectedSprite.value =
+      sprites.value[2] || sprites.value[0] || formData.value.image;
 
-    // Setzt den ersten Sprite als Standardbild oder verwendet das ursprüngliche Bild
-    selectedSprite.value = sprites.value[0] || formData.value.image;
+    // Attacken laden
+    const moveData = data.moves.slice(4, 7);
+    moves.value = await Promise.all(
+      moveData.map(async (move: any) => {
+        const moveRes = await fetch(move.move.url);
+        const moveDetails = await moveRes.json();
+
+        return {
+          name: formatMoveName(moveDetails.name),
+          power: moveDetails.power || 0,
+          damageClass: moveDetails.damage_class?.name || "status",
+          type: moveDetails.type?.name || "normal",
+        };
+      })
+    );
   } catch (error) {
-    // Fehlerbehandlung beim Laden der Sprites
-    console.error("Fehler beim Laden der Sprites:", error);
+    console.error("Fehler beim Laden:", error);
+    // Fallback-Werte
     sprites.value = [formData.value.image];
     selectedSprite.value = formData.value.image;
+    moves.value = [];
   }
 }
 
-// Aktualisiert das Bild des Pokémon, wenn ein anderes Sprite ausgewählt wird
+/**
+ * Formatiert Bewegungsnamen (kebab-case zu lesbarem Text)
+ * @param name - Roher Bewegungsname
+ * @returns Formatierter Name
+ */
+function formatMoveName(name: string) {
+  return name
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * Bestimmt die Effektivität einer Attacke
+ * @param move - Die Attacke
+ * @returns Beschreibung mit Emoji
+ */
+function getEffectiveness(move: {
+  power: number;
+  damageClass: string;
+}): string {
+  if (move.damageClass === "status") return "⚡ Status";
+
+  const basePower = move.power || 0;
+  let effectiveness = "";
+
+  if (basePower >= 100) effectiveness = "💥 Stark";
+  else if (basePower >= 60) effectiveness = "🔵 Mittel";
+  else if (basePower > 0) effectiveness = "🔶 Schwach";
+
+  return `${effectiveness} (${basePower})`;
+}
+
+// Initiales Laden der Daten
+onMounted(() => {
+  fetchPokemonData();
+});
+
+// Beobachtet Sprite-Änderungen
 watch(selectedSprite, (newVal) => {
   formData.value.image = newVal;
 });
-
-// Startet den Ladevorgang der Sprites beim Laden der Komponente
-onMounted(() => {
-  fetchSprites();
-});
 </script>
 
+<!-- 
+  Modal-Dialog Struktur:
+  - Formularfelder
+  - Sprite-Auswahl
+  - Attacken-Übersicht
+  - Aktionsbuttons
+-->
 <template>
   <div class="edit-modal">
     <div class="edit-content">
-      <!-- Überschrift mit ursprünglichem Namen -->
       <h2>{{ originalName }} bearbeiten</h2>
-
-      <!-- Eingabefeld für den Namen -->
+      <!-- Formularfelder -->
       <div class="form-group">
         <label>Name:</label>
         <input v-model="formData.name" @keypress.enter="handleSave" />
       </div>
-
-      <!-- Eingabefeld für den Typ -->
       <div class="form-group">
         <label>Typ:</label>
         <input v-model="formData.type" @keypress.enter="handleSave" />
       </div>
-
-      <!-- Dropdown zum Auswählen eines Bildes -->
+      <!-- Sprite-Auswahl -->
       <div class="form-group">
         <label>Bild auswählen:</label>
         <select v-model="selectedSprite" class="sprite-select">
@@ -109,23 +162,65 @@ onMounted(() => {
           </option>
         </select>
       </div>
-
-      <!-- Vorschau des aktuell ausgewählten Bildes -->
+      <!-- Bildvorschau -->
       <div class="preview">
         <img :src="selectedSprite" :alt="formData.name" />
       </div>
-
-      <!-- Buttons zum Speichern oder Abbrechen -->
+      <!-- Attacken-Sektion -->
+      <div class="moves-section" v-if="moves.length > 0">
+        <h3>Attacken</h3>
+        <div class="moves-list">
+          <div
+            v-for="(move, index) in moves"
+            :key="index"
+            class="move"
+            :class="move.type"
+          >
+            <div class="move-header">
+              <span class="move-name">{{ move.name }}</span>
+              <span class="move-type">{{ move.type }}</span>
+            </div>
+            <div class="move-details">
+              <span class="move-effectiveness">
+                {{ getEffectiveness(move) }}
+              </span>
+              <span class="move-damage-class">
+                {{ move.damageClass === "status" ? "Status" : "Schaden" }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Aktionsbuttons -->
       <div class="actions">
         <button @click="handleSave" class="save-btn">Speichern</button>
         <button @click="handleCancel" class="cancel-btn">Abbrechen</button>
+        <button
+      v-if="props.yourTeam.length < 3"
+      @click="handleAddToTeam" 
+      class="add-team-btn"
+    >
+      Ins Team
+    </button>
+    <button 
+      v-if="props.opponentTeam.length < 3"
+      @click="handleAddToOpponent" 
+      class="add-opponent-btn"
+    >
+      Ins Gegnerteam
+    </button>
       </div>
     </div>
   </div>
 </template>
 
+<!-- 
+  Modal-Dialog Styles
+  - Pokémon-spezifisches Farbschema
+  - Typ-spezifische Attackenfarben
+  - Responsive Gestaltung
+-->
 <style scoped>
-/* Modal-Overlay für Bearbeitungsfenster */
 .edit-modal {
   position: fixed;
   top: 0;
@@ -139,15 +234,17 @@ onMounted(() => {
   z-index: 1000;
 }
 
-/* Innenbereich des Modals */
+/* Inhaltscontainer */
 .edit-content {
-  background-color: #e4c932;
-  border: 2px solid #2070cc;
+  background-color: #e4c932; /* Pokémon-Gelb */
+  border: 2px solid #2070cc; /* Pokémon-Blau */
   padding: 2rem;
   border-radius: 10px;
   width: 90%;
   max-width: 500px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 /* Formulargruppen */
@@ -169,7 +266,7 @@ onMounted(() => {
   border-radius: 5px;
 }
 
-/* Dropdown für Sprites */
+/* Sprite-Auswahl */
 .sprite-select {
   width: 100%;
   padding: 8px;
@@ -190,10 +287,68 @@ onMounted(() => {
   border-radius: 5px;
 }
 
-/* Button-Bereich */
+/* Attacken-Sektion */
+.moves-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+}
+
+.moves-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.move {
+  padding: 0.8rem;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-left: 4px solid var(--type-color, #a8a878); /* Standard: Normal-Typ */
+}
+
+.move-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.move-name {
+  font-weight: bold;
+  color: #000000;
+}
+
+.move-type {
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: white;
+  text-transform: capitalize;
+  background-color: var(--type-color, #a8a878);
+}
+
+.move-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.move-effectiveness {
+  font-weight: bold;
+}
+
+.move-damage-class {
+  color: #666;
+  font-style: italic;
+}
+
+/* Aktionsbuttons */
 .actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -204,16 +359,99 @@ button {
   border-radius: 5px;
   font-weight: bold;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-/* Farben für Speichern und Abbrechen */
 .save-btn {
   background: #2070cc;
   color: #e4c932;
 }
 
+.save-btn:hover {
+  background: #1a5ca1;
+}
+
 .cancel-btn {
   background: #e4c932;
   color: #2070cc;
+  border: 1px solid #2070cc;
+}
+
+.cancel-btn:hover {
+  background: #d4b92a;
+}
+
+.add-team-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.add-team-btn:hover {
+  background: #3e8e41;
+}
+
+.add-opponent-btn {
+  background: #ffad16;
+  color: white;
+}
+
+.add-opponent-btn:hover {
+  background: #b97f11;
+}
+
+/* Typ-spezifische Farben für Attacken */
+.normal {
+  --type-color: #a8a878;
+}
+.fire {
+  --type-color: #f08030;
+}
+.water {
+  --type-color: #6890f0;
+}
+.electric {
+  --type-color: #f8d030;
+}
+.grass {
+  --type-color: #78c850;
+}
+.ice {
+  --type-color: #98d8d8;
+}
+.fighting {
+  --type-color: #c03028;
+}
+.poison {
+  --type-color: #a040a0;
+}
+.ground {
+  --type-color: #e0c068;
+}
+.flying {
+  --type-color: #a890f0;
+}
+.psychic {
+  --type-color: #f85888;
+}
+.bug {
+  --type-color: #a8b820;
+}
+.rock {
+  --type-color: #b8a038;
+}
+.ghost {
+  --type-color: #705898;
+}
+.dragon {
+  --type-color: #7038f8;
+}
+.dark {
+  --type-color: #705848;
+}
+.steel {
+  --type-color: #b8b8d0;
+}
+.fairy {
+  --type-color: #ee99ac;
 }
 </style>

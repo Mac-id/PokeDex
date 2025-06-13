@@ -1,35 +1,50 @@
 <script setup lang="ts">
-// Vue-Komponenten- und -Hooks importieren
 import { ref, onMounted } from "vue";
-
-// Import der Kinderkomponenten
-import PokemonTable from "./PokemonTable.vue";
 import EditPokemon from "./EditPokemon.vue";
-
-// Typdefinition für ein Pokémon
+import PokemonTable from "./PokemonTable.vue";
+import BattleField from "./BattleField.vue";
 import type { Pokemon } from "../types";
 
-// Reactive Referenzen für die Pokémonliste, das aktuell bearbeitete Pokémon und das Anzeigen des Edit-Formulars
-const pokemonList = ref<Pokemon[]>([]);
-const editingPokemon = ref<Pokemon | null>(null);
-const showEditForm = ref(false);
+/**
+ * Hauptkomponente der Pokémon-Anwendung
+ * Verantwortlich für:
+ * - Laden der Pokémon-Daten
+ * - Verwaltung des Teams
+ * - Steuerung des Bearbeitungsmodus
+ */
 
-// Wird ausgeführt, sobald die Komponente gemountet ist
+// Reaktive Zustände der Applikation
+const pokemonList = ref<Pokemon[]>([]);
+const showEditForm = ref(false);
+const editingPokemon = ref<Pokemon | null>(null);
+const yourTeam = ref<Pokemon[]>([]);
+const opponentTeam = ref<Pokemon[]>([]);
+const showBattle = ref(false); 
+
+const startBattle = () => {
+  showBattle.value = true;
+};
+
+/**
+ * Lädt Pokémon-Daten von der PokeAPI beim Initialisieren der Komponente
+ * Führt folgende Schritte aus:
+ * 1. Abruf der Basisliste aller Pokémon
+ * 2. Parallelisierung der Detailabfragen
+ * 3. Formatierung der Daten für die Anwendung
+ */
+
 onMounted(async () => {
   try {
-    // Ruft die Liste aller Pokémon ab (bis zu 1025)
     const response = await fetch(
       "https://pokeapi.co/api/v2/pokemon?limit=1025"
     );
     const data = await response.json();
 
-    // Für jedes Pokémon in der Liste werden Details abgefragt
     pokemonList.value = await Promise.all(
       data.results.map(async (pokemon: { name: string; url: string }) => {
         const res = await fetch(pokemon.url);
         const details = await res.json();
 
-        // Name, Typen und Bild des Pokémon werden extrahiert und formatiert
         return {
           name: details.name.charAt(0).toUpperCase() + details.name.slice(1),
           type: details.types
@@ -43,21 +58,83 @@ onMounted(async () => {
       })
     );
   } catch (error) {
-    // Fehlerbehandlung beim Laden der Daten
     console.error("Fehler beim Laden:", error);
   }
 });
 
-// Funktion zum Starten des Editierens eines Pokémon
+/**
+ * Fügt ein Pokémon zum Team hinzu
+ * @param pokemon - Das hinzuzufügende Pokémon
+ * @throws Alert wenn Team bereits voll ist
+ */
+const addToTeam = (pokemon: Pokemon) => {
+  if (yourTeam.value.length >= 3) {
+    alert("Dein Team ist bereits voll (max. 3 Pokémon)!");
+    return;
+  }
+  yourTeam.value.push({ ...pokemon });
+};
+
+const addToOpponentTeam = (pokemon: Pokemon) => {
+  if (opponentTeam.value.length >= 3) {
+    alert("Das gegnerische Team ist bereits voll (max. 3 Pokémon)!");
+    return;
+  }
+  opponentTeam.value.push({ ...pokemon });
+};
+
+/**
+ * Entfernt ein Pokémon aus dem Team
+ * @param index - Position im Team-Array
+ */
+const removeFromTeam = (index: number) => {
+  yourTeam.value.splice(index, 1);
+};
+
+const removeFromOpponent = (index: number) => {
+  opponentTeam.value.splice(index, 1);
+};
+
+const updateEnemyTeam = (shuffled: Pokemon[]) => {
+  opponentTeam.value = shuffled;
+};
+
+/**
+ * Startet den Bearbeitungsmodus für ein Pokémon
+ * @param pokemon - Das zu bearbeitende Pokémon
+ */
 function handleEdit(pokemon: Pokemon) {
-  // Erstellt eine Kopie des Pokémon-Objekts für die Bearbeitung
   editingPokemon.value = JSON.parse(JSON.stringify(pokemon));
   showEditForm.value = true;
 }
 
-// Funktion zum Speichern des bearbeiteten Pokémon
+const handleSwitchPokemon = (index: number) => {
+  if (index > 0 && index < yourTeam.value.length) {
+    const [pokemon] = yourTeam.value.splice(index, 1);
+    yourTeam.value.unshift(pokemon);
+  }
+};
+
+// In App.vue
+const handleCancel = () => {
+  showEditForm.value = false;
+  editingPokemon.value = null;
+};
+
+const emit = defineEmits<{
+  (e: 'close-battle'): void;
+}>();
+
+
+function handleCloseBattle() {
+  emit('close-battle'); // 👈 Elternkomponente (`App.vue`) kümmert sich um `showBattle = false`
+}
+
+/**
+ * Speichert Änderungen an einem Pokémon
+ * @param updatedPokemon - Die aktualisierten Pokémon-Daten
+ */
 function handleSave(updatedPokemon: Pokemon) {
-  // Findet das ursprüngliche Pokémon in der Liste und ersetzt es mit dem aktualisierten
   const index = pokemonList.value.findIndex(
     (p) => p.name === editingPokemon.value?.name
   );
@@ -69,38 +146,82 @@ function handleSave(updatedPokemon: Pokemon) {
 </script>
 
 <template>
+  <!-- Hauptcontainer mit Pokémon-Hintergrund -->
   <div class="app-container">
-    <!-- Tabelle mit Pokémon-Liste -->
-    <PokemonTable :pokemonList="pokemonList" @edit="handleEdit" />
-
-    <!-- Bearbeitungsformular wird angezeigt, wenn ein Pokémon bearbeitet wird -->
-    <EditPokemon
-      v-if="showEditForm && editingPokemon"
-      :initialPokemon="editingPokemon"
-      @save="handleSave"
-      @cancel="showEditForm = false"
+    <BattleField
+    v-if="showBattle"
+    :your-team="yourTeam"
+    :opponent-team="opponentTeam"
+    @close-battle="showBattle = false"
+    @switch-pokemon="handleSwitchPokemon"
     />
-  </div>
-</template>
+    <!-- Pokémon-Tabelle mit Suchfunktion und Teamverwaltung -->
+    <PokemonTable
+    v-if="!showBattle"
+    :pokemon-list="pokemonList"
+    :your-team="yourTeam"
+    :opponent-team="opponentTeam"
+    :show-edit-form="showEditForm"
+    :editing-pokemon="editingPokemon"
+    :show-battle="showBattle"
+    @edit="handleEdit"
+    @add-to-team="addToTeam"
+    @remove-from-team="removeFromTeam"
+    @add-to-opponent-team="addToOpponentTeam"
+    @remove-from-opponent="removeFromOpponent"
+    @update-enemy-team="updateEnemyTeam"
+    @start-battle="startBattle"
+    @save="handleSave"
+    @cancel="handleCancel"
+    @switch-pokemon="handleSwitchPokemon"
+    />
+    
+    <!-- Bearbeitungsdialog (modal) -->
+    <EditPokemon
+    v-if="showEditForm && editingPokemon"
+    :initialPokemon="editingPokemon"
+    :yourTeam="yourTeam"
+    :opponentTeam="opponentTeam"
+    @save="handleSave"
+    @cancel="showEditForm = false"
+    @add-to-team="addToTeam"
+    @add-to-opponent="addToOpponentTeam"
+    />
+    
+    </div>
+  </template>
 
 <style>
-/* Verhindert Scrollen und stellt sicher, dass Hintergrundbild den gesamten Bereich abdeckt */
+/* Grundlegende Styles für die App */
 body,
 html {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden; /* Verhindert horizontales Scrollen */
+  overflow: hidden;
 }
 
-/* Container für die App mit Hintergrundbild und Padding für z. B. Header */
+/* In App.vue */
+.pokemon-table, .team-column {
+  transition: opacity 0.3s ease;
+}
+
+.v-enter-active, .v-leave-active {
+  transition: opacity 0.3s;
+}
+.v-enter-from, .v-leave-to {
+  opacity: 0;
+}
+
+/* Container mit Pokémon-Hintergrund */
 .app-container {
+  position: relative;
   min-height: 100vh;
   background-image: url("@/assets/pokemon-bg.jpg");
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  padding-top: 120px; /* Platz für Header */
+  padding-top: 120px;
   box-sizing: border-box;
 }
 </style>

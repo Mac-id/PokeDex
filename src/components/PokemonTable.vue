@@ -1,117 +1,215 @@
 <script setup lang="ts">
-import { ref, computed } from "vue"; // Reaktive Referenzen und berechnete Werte aus Vue importieren
-import type { Pokemon } from "../types"; // Typdefinition für Pokémon importieren
+import { ref, computed } from "vue";
+import type { Pokemon } from "../types";
+import EditPokemon from "./EditPokemon.vue";
+import BattleField from "./BattleField.vue";
 
-// Props definieren: erwartet wird eine Liste von Pokémon, die extern übergeben wird
 const props = defineProps<{
   pokemonList: Pokemon[];
+  yourTeam: Pokemon[];
+  opponentTeam: Pokemon[];
+  showEditForm: boolean;
+  editingPokemon: Pokemon | null;
+  showBattle: boolean;
 }>();
 
-// Events definieren: "edit"-Event wird ausgelöst, wenn ein Pokémon bearbeitet werden soll
 const emit = defineEmits<{
-  (e: "edit", pokemon: Pokemon): void;
+  (e: 'edit', pokemon: Pokemon): void;
+  (e: 'add-to-team', pokemon: Pokemon): void;
+  (e: 'remove-from-team', index: number): void;
+  (e: 'add-to-opponent-team', pokemon: Pokemon): void;
+  (e: 'remove-from-opponent', index: number): void;
+  (e: 'update-enemy-team', team: Pokemon[]): void;
+  (e: 'start-battle'): void;
+  (e: 'save', pokemon: Pokemon): void;
+  (e: 'cancel'): void;
+  (e: 'switch-pokemon', index: number): void;
 }>();
 
-// Reaktive Referenz für das Suchfeld
 const searchQuery = ref("");
 
-// Computed Property für gefilterte Pokémon basierend auf Suchtext
 const filteredPokemon = computed(() => {
-  if (!searchQuery.value) return props.pokemonList; // Wenn keine Suche, zeige alle Pokémon
-
-  const query = searchQuery.value.toLowerCase(); // Suchtext in Kleinbuchstaben
+  if (!searchQuery.value) return props.pokemonList;
+  const query = searchQuery.value.toLowerCase();
   return props.pokemonList.filter(
     (pokemon) =>
-      pokemon.name.toLowerCase().includes(query) || // Treffer im Namen
-      pokemon.type.toLowerCase().includes(query) // oder im Typ
+      pokemon.name.toLowerCase().includes(query) ||
+      pokemon.type.toLowerCase().includes(query)
   );
 });
 
-// Funktion, die ausgeführt wird, wenn "Kakuna" entwickelt wird
-function entwicklePokemon() {
-  alert("Kakuna entwickelt sich zu Beedrill!"); // Einfache Aktion: Zeigt Hinweisfenster
-}
+const addToTeam = (pokemon: Pokemon) => emit('add-to-team', pokemon);
+const removeFromTeam = (index: number) => emit('remove-from-team', index);
+const addToOpponentTeam = (pokemon: Pokemon) => emit('add-to-opponent-team', pokemon);
+const removeFromOpponent = (index: number) => emit('remove-from-opponent', index);
+
+const shuffleOpponentTeam = () => {
+  const shuffled = [...props.pokemonList].sort(() => 0.5 - Math.random());
+  emit('update-enemy-team', shuffled.slice(0, 3));
+};
+
+const handleEdit = (pokemon: Pokemon) => emit('edit', pokemon);
+const handleSave = (pokemon: Pokemon) => emit('save', pokemon);
+const handleCancel = () => emit('cancel');
+
+const entwicklePokemon = () => {
+  alert("Kakuna entwickelt sich zu Beedrill!");
+};
 </script>
 
 <template>
-  <!-- Gesamtcontainer der Seite -->
   <div class="page-container">
-    <!-- Header mit Pokémon-Logo -->
     <header class="header">
       <img alt="Pokemon" class="logo" src="@/assets/pokemon-logo.png" />
     </header>
 
-    <!-- Inhaltlicher Bereich unter dem Header -->
-    <div class="content-wrapper">
-      <!-- Suchfeld für Name oder Typ -->
-      <div class="search-container">
-        <input
-          v-model="searchQuery"
-          placeholder="Suche nach Name oder Typ..."
-          class="search-input"
-        />
+    <div class="main-content">
+      <!-- Linke Spalte - Teamverwaltung -->
+      <div class="team-column">
+        <!-- Eigenes Team -->
+        <div class="team-box">
+          <h3>Dein Team ({{ yourTeam.length }}/3)</h3>
+          <div v-if="yourTeam.length === 0" class="team-placeholder">
+            Erstelle dein Team
+          </div>
+          <div v-else class="team-members">
+            <div
+              v-for="(pokemon, index) in yourTeam"
+              :key="'your-team-' + index"
+              class="pokemon-container"
+              @contextmenu.prevent="removeFromTeam(index)"
+            >
+              <img
+                :src="pokemon.image"
+                :alt="pokemon.name"
+                class="team-pokemon"
+                :title="pokemon.name"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Gegnerteam -->
+        <div class="team-box">
+          <div class="opponent-header">
+            <h3>Gegnerteam</h3>
+            <button
+              v-if="opponentTeam.length > 0"
+              @click="shuffleOpponentTeam"
+              class="shuffle-btn small"
+            >
+              Shuffle
+            </button>
+          </div>
+          <div v-if="opponentTeam.length === 0" class="team-placeholder">
+            <button @click="shuffleOpponentTeam" class="shuffle-btn">
+              Shuffle Team
+            </button>
+          </div>
+          <div v-else class="team-members">
+            <div
+              v-for="(pokemon, index) in opponentTeam"
+              :key="'opponent-team-' + index"
+              class="pokemon-container"
+              @contextmenu.prevent="removeFromOpponent(index)"
+            >
+              <img
+                :src="pokemon.image"
+                :alt="pokemon.name"
+                class="team-pokemon"
+                :title="pokemon.name"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Kampf-Button -->
+        <button 
+  v-if="yourTeam.length > 0 && opponentTeam.length > 0"
+  class="battle-btn"
+  @click="$emit('start-battle')"
+>
+  <span class="battle-text">START BATTLE</span>
+</button>
       </div>
 
-      <!-- Tabellencontainer -->
-      <div class="tabelle-container">
-        <!-- Tabelle wird nur angezeigt, wenn Filterergebnis nicht leer ist -->
-        <table class="tabelle" v-if="filteredPokemon.length">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Typ</th>
-              <th>Bild</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Pokémon-Zeile, löst das 'edit'-Event aus -->
-            <tr
-              v-for="(pokemon, index) in filteredPokemon"
-              :key="index"
-              @click="emit('edit', pokemon)"
-              class="pokemon-row"
-            >
-              <!-- Pokémon-Name mit optionalem Button für Kakuna -->
-              <td :class="{ pid: pokemon.name.toLowerCase().includes('pid') }">
-                {{ pokemon.name }}
+      <!-- Rechte Spalte - Pokémon-Tabelle -->
+      <div class="table-column">
+        <!-- Suchfeld -->
+        <div class="search-container">
+          <input
+            v-model="searchQuery"
+            placeholder="Suche nach Name oder Typ..."
+            class="search-input"
+          />
+        </div>
 
-                <!-- Button erscheint nur bei Kakuna, ruft Entwickeln auf -->
-                <!-- @click.stop verhindert, dass der Zeilenklick ausgelöst wird -->
-                <button
-                  class="btn"
-                  v-if="pokemon.name === 'Kakuna'"
-                  @click.stop="entwicklePokemon"
-                >
-                  Entwickeln
-                </button>
-              </td>
-
-              <!-- Pokémon-Typ -->
-              <td>{{ pokemon.type }}</td>
-
-              <!-- Pokémon-Bild -->
-              <td>
-                <img
-                  :src="pokemon.image"
-                  :alt="pokemon.name"
-                  class="pokemon-image"
-                  loading="lazy"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Wird angezeigt, wenn kein Pokémon gefunden wurde -->
-        <p v-else>Keine Pokémon gefunden</p>
+        <!-- Tabellencontainer -->
+        <div class="tabelle-container">
+          <table class="tabelle" v-if="filteredPokemon.length">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Typ</th>
+                <th>Bild</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(pokemon, index) in filteredPokemon"
+                :key="index"
+                @click="handleEdit(pokemon)"
+                class="pokemon-row"
+              >
+                <td :class="{ pid: pokemon.name.toLowerCase().includes('pid') }">
+                  {{ pokemon.name }}
+                  <button
+                    class="btn"
+                    v-if="pokemon.name === 'Kakuna'"
+                    @click.stop="entwicklePokemon"
+                  >
+                    Entwickeln
+                  </button>
+                </td>
+                <td>{{ pokemon.type }}</td>
+                <td>
+                  <img
+                    :src="pokemon.image"
+                    :alt="pokemon.name"
+                    class="pokemon-image"
+                    loading="lazy"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p v-else>Keine Pokémon gefunden</p>
+        </div>
       </div>
     </div>
-
     <h1 class="dev">by Mac-Id</h1>
-
-    <!-- Pikachu-GIF läuft unten entlang -->
     <img src="@/assets/pikachu.gif" alt="Pikachu" class="pikachu" />
   </div>
+
+  <!-- Bearbeitungsdialog -->
+  <EditPokemon
+      v-if="showEditForm && editingPokemon"
+      :initial-pokemon="editingPokemon"
+      :your-team="yourTeam"
+      :opponent-team="opponentTeam"
+      @save="handleSave"
+      @cancel="handleCancel"
+      @add-to-team="addToTeam"
+      @add-to-opponent="addToOpponentTeam"
+    />
+
+    <BattleField
+      v-if="showBattle"
+      :your-team="yourTeam"
+      :opponent-team="opponentTeam"
+      @close-battle="emit('cancel')"
+      @switch-pokemon="(index: number) => emit('switch-pokemon', index)"
+    />
 </template>
 
 <style scoped>
@@ -121,6 +219,7 @@ function entwicklePokemon() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top: 1rem;
 }
 
 header {
@@ -131,18 +230,183 @@ header {
 
 .logo {
   height: 100px;
-  margin-top: -10rem;
+  margin-top: -12rem;
   margin-bottom: -70px;
 }
 
-/* Wrapper für Inhalte unterhalb des Headers */
-.content-wrapper {
-  width: 100%;
+h3 {
+  color: white;
+}
+
+.team-placeholder {
+  text-align: center;
+  padding: 20px;
+  color: #ffffff;
+  font-style: italic;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  align-items: center;
   flex-grow: 1;
+}
+
+.pokemon-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 40px;
+}
+
+.pokemon-name {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #2070cc;
+  text-align: center;
+  margin-top: 5px;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opponent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.shuffle-btn {
+  background-color: #2070cc;
+  color: #e4c932;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.shuffle-btn:hover {
+  background-color: #1a5ca1;
+}
+
+.shuffle-btn.small {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  margin-left: 10px;
+}
+
+.main-content {
+  display: flex;
+  gap: 30px;
+  width: 98vw;
+  max-width: none;
+  margin: 0;
+  padding: 0 20px;
+}
+
+.team-column {
+  width: 300px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-right: 20px;
+}
+
+.team-box {
+  background: linear-gradient(#9c9c9c), url("@/assets/teams-bg.jpg");
+  background-size: cover;
+  background-blend-mode: overlay;
+  border: 6px solid #2070cc;
+  border-radius: 8px;
+  padding: 15px;
+  padding-right: 15px;
+  height: auto;
+  min-height: 200px;
+  display: flex;
+  margin-right: -2rem;
+  margin-left: 1rem;
+  margin-top: 1.2rem;
+  flex-direction: column;
+}
+
+.team-members {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  padding: 5px;
+}
+
+.team-pokemon {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.team-pokemon:hover {
+  transform: scale(1.1);
+}
+
+.battle-btn {
+  background: linear-gradient(to bottom, #ff3e3e, #c00000);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 15px 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 10px;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-right: -2rem;
+  margin-left: 1.5rem;
+}
+
+.battle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, #ff4e4e, #d10000);
+}
+
+.battle-text {
+  font-size: 1.1rem;
+}
+
+.battle-icon {
+  font-size: 1.5rem;
+  margin-top: 5px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.table-column {
+  flex-grow: 1;
+  min-width: 0;
+  margin-right: 20px;
 }
 
 .dev {
@@ -158,7 +422,6 @@ header {
   padding: 3px;
 }
 
-/* Pikachu animiert */
 .pikachu {
   position: fixed;
   bottom: 0;
@@ -169,16 +432,13 @@ header {
   z-index: 9999;
 }
 
-/* Suchfeld-Container */
 .search-container {
   display: flex;
   justify-content: flex-end;
-  width: 90vw;
-  max-width: 1200px;
+  width: 100%;
   margin: 0 auto 15px;
 }
 
-/* Suchfeld-Styling */
 .search-input {
   padding: 8px 12px;
   border: 5px solid #2070cc;
@@ -189,21 +449,21 @@ header {
   width: 250px;
   margin-top: -38px;
 }
+
 .search-input::placeholder {
   color: #2070cc;
   opacity: 0.7;
 }
 
-/* Tabellenzeile Hover-Effekt */
 .pokemon-row {
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .pokemon-row:hover {
   background-color: rgba(231, 94, 3, 0.103);
 }
 
-/* Animation für Pikachu */
 @keyframes move-pikachu {
   0% {
     left: calc(0% - 40px);
@@ -227,13 +487,11 @@ header {
   }
 }
 
-/* Name mit "pid" hervorheben */
 .pid {
   color: #2070cc;
   font-weight: bold;
 }
 
-/* Entwickeln-Button */
 .btn {
   background-color: #2070cc;
   border-radius: 4px;
@@ -244,17 +502,16 @@ header {
   font-size: 0.8rem;
   cursor: pointer;
 }
+
 .btn:active {
   transform: translateY(2px);
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-/* Tabellen-Container mit Scrollbar */
 .tabelle-container {
   border-radius: 10px;
   border: 6px solid #2070cc;
-  width: 90vw;
-  max-width: 1200px;
+  width: 100%;
   height: 70vh;
   overflow-y: auto;
   padding: 10px;
@@ -268,16 +525,15 @@ header {
   background-blend-mode: overlay;
 }
 
-/* Custom Scrollbar */
 .tabelle-container::-webkit-scrollbar {
   width: 6px;
 }
+
 .tabelle-container::-webkit-scrollbar-thumb {
   background-color: #2e6ac4;
   border-radius: 3px;
 }
 
-/* Tabellen-Styling */
 .tabelle {
   width: 100%;
   border-collapse: collapse;
@@ -285,6 +541,7 @@ header {
   color: rgb(0, 0, 0);
   table-layout: fixed;
 }
+
 .tabelle th,
 .tabelle td {
   padding: 10px;
@@ -292,28 +549,43 @@ header {
   border-bottom: 1px solid rgba(0, 0, 0, 0.3);
 }
 
-/* Spaltentrenner und Schriftgrößen */
 .tabelle td:first-child,
 .tabelle th:first-child {
   border-right: 1px solid rgba(0, 0, 0, 0.3);
 }
+
 .tabelle td:first-child {
   font-size: 1.3rem;
 }
+
 .tabelle td:nth-child(2) {
   font-size: 1.3rem;
 }
+
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+
 .tabelle th {
   font-size: 1.4rem;
   font-weight: bold;
   border-bottom: 2px solid black;
 }
+
 .tabelle th:last-child {
   border-left: 1px solid rgba(0, 0, 0, 0.3);
 }
+
 .tabelle td:last-child {
   border-left: 1px solid rgba(0, 0, 0, 0.3);
 }
+
 .tabelle tr:last-child td {
   border-bottom: none;
 }
