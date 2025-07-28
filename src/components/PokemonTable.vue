@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import type { Pokemon } from "../types";
-import EditPokemon from "./EditPokemon.vue";
-import BattleField from "./BattleField.vue";
 
 const props = defineProps<{
   pokemonList: Pokemon[];
@@ -11,6 +9,7 @@ const props = defineProps<{
   showEditForm: boolean;
   editingPokemon: Pokemon | null;
   showBattle: boolean;
+  loadMoveDetails: (pokemon: Pokemon) => Promise<void>;
 }>();
 
 const emit = defineEmits<{
@@ -55,6 +54,7 @@ const handleCancel = () => emit('cancel');
 const entwicklePokemon = () => {
   alert("Kakuna entwickelt sich zu Beedrill!");
 };
+
 </script>
 
 <template>
@@ -66,7 +66,7 @@ const entwicklePokemon = () => {
     <div class="main-content">
       <!-- Linke Spalte - Teamverwaltung -->
       <div class="team-column">
-        <!-- Eigenes Team -->
+        <!-- Eigenes Team --> 
         <div class="team-box">
           <h3>Dein Team ({{ yourTeam.length }}/3)</h3>
           <div v-if="yourTeam.length === 0" class="team-placeholder">

@@ -1,131 +1,98 @@
-<!-- 
-  Bearbeitungsdialog für Pokémon
-  Verantwortlich für:
-  - Anzeige und Bearbeitung von Pokémon-Daten
-  - Anzeige zusätzlicher Details (Attacken, Sprites)
-  - Speichern/Abbrechen-Funktionalität
--->
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import type { Pokemon } from "../types";
 
-// Props-Definition
 const props = defineProps<{
   initialPokemon: Pokemon;
   yourTeam: Pokemon[];
   opponentTeam: Pokemon[];
+  loadMoveDetails: (pokemon: Pokemon) => Promise<void>;
 }>();
 
-// Event-Emitter
 const emit = defineEmits<{
-  (e: "save", pokemon: Pokemon): void;
-  (e: "cancel"): void;
-  (e: "add-to-team", pokemon: Pokemon): void;
-  (e: "add-to-opponent", pokemon: Pokemon): void;
+  (e: 'save', pokemon: Pokemon): void;
+  (e: 'cancel'): void;
+  (e: 'add-to-team', pokemon: Pokemon): void;
+  (e: 'add-to-opponent', pokemon: Pokemon): void;
 }>();
 
-// Reaktive Formulardaten
 const formData = ref<Pokemon>({ ...props.initialPokemon });
+const selectedSprite = ref(props.initialPokemon.image);
 const originalName = ref(props.initialPokemon.name);
+const sprites = ref<string[]>(props.initialPokemon.sprites || []);
+const moves = ref(props.initialPokemon.moves || []);
 
-// Pokémon-Details
-const moves = ref<{ name: string; power: number; damageClass: string; type: string }[]>([]);
-const sprites = ref<string[]>([]);
-const selectedSprite = ref("");
-
-const handleSave = () => emit("save", formData.value);
-const handleCancel = () => emit("cancel");
-const handleAddToTeam = () => emit("add-to-team", formData.value);
-const handleAddToOpponent = () => emit("add-to-opponent", formData.value);
-/**
- * Lädt zusätzliche Pokémon-Daten von der API
- * - Sprites
- * - Attacken
- */
-async function fetchPokemonData() {
-  try {
-    const response = await fetch(
-      `https://pokeapi.co/api/v2/pokemon/${props.initialPokemon.name.toLowerCase()}`
-    );
-    const data = await response.json();
-
-    // Sprites sammeln
-    const spriteList = [];
-    const spriteData = data.sprites;
-    for (const key in spriteData) {
-      if (spriteData[key] && typeof spriteData[key] === "string") {
-        spriteList.push(spriteData[key]);
-      }
-    }
-    sprites.value = spriteList.filter(Boolean);
-    selectedSprite.value =
-      sprites.value[2] || sprites.value[0] || formData.value.image;
-
-    // Attacken laden
-    const moveData = data.moves.slice(4, 7);
-    moves.value = await Promise.all(
-      moveData.map(async (move: any) => {
-        const moveRes = await fetch(move.move.url);
-        const moveDetails = await moveRes.json();
-
-        return {
-          name: formatMoveName(moveDetails.name),
-          power: moveDetails.power || 0,
-          damageClass: moveDetails.damage_class?.name || "status",
-          type: moveDetails.type?.name || "normal",
-        };
-      })
-    );
-  } catch (error) {
-    console.error("Fehler beim Laden:", error);
-    // Fallback-Werte
-    sprites.value = [formData.value.image];
-    selectedSprite.value = formData.value.image;
-    moves.value = [];
+// Lade zusätzliche Daten
+onMounted(async () => {
+  // Sicherstellen dass Moves geladen sind
+  if ((!formData.value.moves || formData.value.moves.length === 0) && formData.value.moveUrls) {
+    await props.loadMoveDetails(formData.value);
+    moves.value = formData.value.moves || [];
   }
-}
+  
+  // Falls keine Sprites vorhanden sind, lade sie
+  if (!formData.value.sprites || formData.value.sprites.length === 0) {
+    try {
+      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${formData.value.name.toLowerCase()}`);
+      const data = await response.json();
+      const spriteList = [];
+      const spriteData = data.sprites;
+      for (const key in spriteData) {
+        if (spriteData[key] && typeof spriteData[key] === "string") {
+          spriteList.push(spriteData[key]);
+        }
+      }
+      formData.value.sprites = spriteList.filter(Boolean);
+      sprites.value = formData.value.sprites;
+      selectedSprite.value = formData.value.sprites[0] || formData.value.image;
+    } catch (error) {
+      console.error("Error loading sprites:", error);
+      formData.value.sprites = [formData.value.image];
+      sprites.value = [formData.value.image];
+    }
+  }
+});
 
-/**
- * Formatiert Bewegungsnamen (kebab-case zu lesbarem Text)
- * @param name - Roher Bewegungsname
- * @returns Formatierter Name
- */
-function formatMoveName(name: string) {
-  return name
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
+const handleSave = () => {
+  formData.value.image = selectedSprite.value;
+  emit('save', formData.value);
+};
 
-/**
- * Bestimmt die Effektivität einer Attacke
- * @param move - Die Attacke
- * @returns Beschreibung mit Emoji
- */
-function getEffectiveness(move: {
-  power: number;
-  damageClass: string;
-}): string {
+const handleCancel = () => emit('cancel');
+
+const handleAddToTeam = () => {
+  emit('add-to-team', formData.value);
+};
+
+const handleAddToOpponent = () => {
+  emit('add-to-opponent', formData.value);
+};
+
+const getEffectiveness = (move: { power: number; damageClass: string }): string => {
   if (move.damageClass === "status") return "⚡ Status";
 
   const basePower = move.power || 0;
   let effectiveness = "";
 
-  if (basePower >= 100) effectiveness = "💥 Stark";
-  else if (basePower >= 60) effectiveness = "🔵 Mittel";
+  if (basePower >= 90) effectiveness = "💥 Stark";
+  else if (basePower >= 50) effectiveness = "🔵 Mittel";
   else if (basePower > 0) effectiveness = "🔶 Schwach";
 
   return `${effectiveness} (${basePower})`;
-}
+};
 
-// Initiales Laden der Daten
-onMounted(() => {
-  fetchPokemonData();
-});
-
-// Beobachtet Sprite-Änderungen
-watch(selectedSprite, (newVal) => {
-  formData.value.image = newVal;
+// Für Template verfügbar machen
+defineExpose({
+  formData,
+  selectedSprite,
+  originalName,
+  sprites,
+  moves,
+  handleSave,
+  handleCancel,
+  handleAddToTeam,
+  handleAddToOpponent,
+  getEffectiveness
 });
 </script>
 
@@ -167,19 +134,19 @@ watch(selectedSprite, (newVal) => {
         <img :src="selectedSprite" :alt="formData.name" />
       </div>
       <!-- Attacken-Sektion -->
-      <div class="moves-section" v-if="moves.length > 0">
-        <h3>Attacken</h3>
-        <div class="moves-list">
-          <div
-            v-for="(move, index) in moves"
-            :key="index"
-            class="move"
-            :class="move.type"
-          >
-            <div class="move-header">
-              <span class="move-name">{{ move.name }}</span>
-              <span class="move-type">{{ move.type }}</span>
-            </div>
+      <div class="moves-section" v-if="moves.length > 3">
+  <h3>Attacken</h3>
+  <div class="moves-list">
+    <div
+      v-for="(move, index) in moves.slice(3, 6)"
+      :key="index"
+      class="move"
+      :class="move.type"
+    >
+      <div class="move-header">
+        <span class="move-name">{{ move.name.charAt(0).toUpperCase() + move.name.slice(1) }}</span>
+        <span class="move-type">{{ move.type }}</span>
+      </div>
             <div class="move-details">
               <span class="move-effectiveness">
                 {{ getEffectiveness(move) }}
@@ -245,6 +212,9 @@ watch(selectedSprite, (newVal) => {
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   max-height: 90vh;
   overflow-y: auto;
+  /* In EditPokemon.vue */
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 /* Formulargruppen */
