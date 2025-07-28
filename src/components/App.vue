@@ -75,6 +75,11 @@ const updateEnemyTeam = (shuffled: Pokemon[]) => {
   opponentTeam.value = shuffled;
 };
 
+// NEUE Funktion zum Aktualisieren deines Teams
+const updateYourTeam = (shuffled: Pokemon[]) => {
+  yourTeam.value = shuffled;
+};
+
 // Bearbeitungsfunktionen
 const handleEdit = (pokemon: Pokemon) => {
   editingPokemon.value = { ...pokemon };
@@ -100,10 +105,10 @@ const startBattle = () => {
 };
 
 const handleSwitchPokemon = (index: number) => {
-  // The 'if' condition is removed. We trust the event from the child component
-  // because it has already performed the necessary checks.
-  const [pokemon] = yourTeam.value.splice(index, 1);
-  yourTeam.value.unshift(pokemon);
+  if (index > 0 && index < yourTeam.value.length) {
+    const [pokemon] = yourTeam.value.splice(index, 1);
+    yourTeam.value.unshift(pokemon);
+  }
 };
 
 const handleCloseBattle = () => {
@@ -121,7 +126,6 @@ onMounted(async () => {
       const res = await fetch(pokemon.url);
       const details = await res.json();
       
-      // Sprites sammeln
       const spriteList = [];
       const spriteData = details.sprites;
       for (const key in spriteData) {
@@ -148,7 +152,6 @@ onMounted(async () => {
       };
     };
 
-    // Pokémon in Batches laden
     const batchSize = 100;
     for (let i = 0; i < listData.results.length; i += batchSize) {
       const batch = listData.results.slice(i, i + batchSize);
@@ -159,7 +162,6 @@ onMounted(async () => {
       pokemonList.value.push(...batchResults);
     }
 
-    // Move-Details für die ersten 20 Pokémon vorladen
     for (let i = 0; i < Math.min(20, pokemonList.value.length); i++) {
       await loadMoveDetails(pokemonList.value[i]);
     }
@@ -167,28 +169,6 @@ onMounted(async () => {
   } catch (error) {
     console.error("Initial load failed:", error);
   }
-});
-
-// Für Template verfügbar machen
-defineExpose({
-  pokemonList,
-  yourTeam,
-  opponentTeam,
-  showEditForm,
-  editingPokemon,
-  showBattle,
-  loadMoveDetails,
-  addToTeam,
-  addToOpponentTeam,
-  removeFromTeam,
-  removeFromOpponent,
-  updateEnemyTeam,
-  handleEdit,
-  handleSave,
-  handleCancel,
-  startBattle,
-  handleSwitchPokemon,
-  handleCloseBattle
 });
 </script>
 
@@ -218,6 +198,7 @@ defineExpose({
       @add-to-opponent-team="addToOpponentTeam"
       @remove-from-opponent="removeFromOpponent"
       @update-enemy-team="updateEnemyTeam"
+      @update-your-team="updateYourTeam"
       @start-battle="startBattle"
       @save="handleSave"
       @cancel="handleCancel"

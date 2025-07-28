@@ -19,6 +19,7 @@ const emit = defineEmits<{
   (e: 'add-to-opponent-team', pokemon: Pokemon): void;
   (e: 'remove-from-opponent', index: number): void;
   (e: 'update-enemy-team', team: Pokemon[]): void;
+  (e: 'update-your-team', team: Pokemon[]): void; // NEU
   (e: 'start-battle'): void;
   (e: 'save', pokemon: Pokemon): void;
   (e: 'cancel'): void;
@@ -47,6 +48,18 @@ const shuffleOpponentTeam = () => {
   emit('update-enemy-team', shuffled.slice(0, 3));
 };
 
+// NEUE Funktion zum Mischen des eigenen Teams
+const shuffleYourTeam = () => {
+  // Sicherheitsabfrage, wenn das Team bereits gefüllt ist
+  if (props.yourTeam.length > 0) {
+    if (!confirm('Möchtest du dein aktuelles Team wirklich durch ein zufälliges ersetzen?')) {
+      return;
+    }
+  }
+  const shuffled = [...props.pokemonList].sort(() => 0.5 - Math.random());
+  emit('update-your-team', shuffled.slice(0, 3));
+};
+
 const handleEdit = (pokemon: Pokemon) => emit('edit', pokemon);
 const handleSave = (pokemon: Pokemon) => emit('save', pokemon);
 const handleCancel = () => emit('cancel');
@@ -54,7 +67,6 @@ const handleCancel = () => emit('cancel');
 const entwicklePokemon = () => {
   alert("Kakuna entwickelt sich zu Beedrill!");
 };
-
 </script>
 
 <template>
@@ -64,11 +76,14 @@ const entwicklePokemon = () => {
     </header>
 
     <div class="main-content">
-      <!-- Linke Spalte - Teamverwaltung -->
       <div class="team-column">
-        <!-- Eigenes Team --> 
         <div class="team-box">
-          <h3>Dein Team ({{ yourTeam.length }}/3)</h3>
+          <div class="team-header">
+            <h3>Dein Team ({{ yourTeam.length }}/3)</h3>
+            <button @click="shuffleYourTeam" class="shuffle-btn small" title="Zufälliges Team erstellen">
+              Shuffle
+            </button>
+          </div>
           <div v-if="yourTeam.length === 0" class="team-placeholder">
             Erstelle dein Team
           </div>
@@ -89,22 +104,19 @@ const entwicklePokemon = () => {
           </div>
         </div>
 
-        <!-- Gegnerteam -->
         <div class="team-box">
-          <div class="opponent-header">
+          <div class="team-header">
             <h3>Gegnerteam</h3>
             <button
-              v-if="opponentTeam.length > 0"
               @click="shuffleOpponentTeam"
               class="shuffle-btn small"
+              title="Zufälliges Gegnerteam erstellen"
             >
               Shuffle
             </button>
           </div>
           <div v-if="opponentTeam.length === 0" class="team-placeholder">
-            <button @click="shuffleOpponentTeam" class="shuffle-btn">
-              Shuffle Team
-            </button>
+            Kein Gegnerteam
           </div>
           <div v-else class="team-members">
             <div
@@ -123,19 +135,16 @@ const entwicklePokemon = () => {
           </div>
         </div>
 
-        <!-- Kampf-Button -->
         <button 
-  v-if="yourTeam.length > 0 && opponentTeam.length > 0"
-  class="battle-btn"
-  @click="$emit('start-battle')"
->
-  <span class="battle-text">START BATTLE</span>
-</button>
+          v-if="yourTeam.length > 0 && opponentTeam.length > 0"
+          class="battle-btn"
+          @click="$emit('start-battle')"
+        >
+          <span class="battle-text">START BATTLE</span>
+        </button>
       </div>
 
-      <!-- Rechte Spalte - Pokémon-Tabelle -->
       <div class="table-column">
-        <!-- Suchfeld -->
         <div class="search-container">
           <input
             v-model="searchQuery"
@@ -144,7 +153,6 @@ const entwicklePokemon = () => {
           />
         </div>
 
-        <!-- Tabellencontainer -->
         <div class="tabelle-container">
           <table class="tabelle" v-if="filteredPokemon.length">
             <thead>
@@ -190,26 +198,6 @@ const entwicklePokemon = () => {
     <h1 class="dev">by Mac-Id</h1>
     <img src="@/assets/pikachu.gif" alt="Pikachu" class="pikachu" />
   </div>
-
-  <!-- Bearbeitungsdialog -->
-  <EditPokemon
-      v-if="showEditForm && editingPokemon"
-      :initial-pokemon="editingPokemon"
-      :your-team="yourTeam"
-      :opponent-team="opponentTeam"
-      @save="handleSave"
-      @cancel="handleCancel"
-      @add-to-team="addToTeam"
-      @add-to-opponent="addToOpponentTeam"
-    />
-
-    <BattleField
-      v-if="showBattle"
-      :your-team="yourTeam"
-      :opponent-team="opponentTeam"
-      @close-battle="emit('cancel')"
-      @switch-pokemon="(index: number) => emit('switch-pokemon', index)"
-    />
 </template>
 
 <style scoped>
@@ -269,7 +257,8 @@ h3 {
   text-overflow: ellipsis;
 }
 
-.opponent-header {
+/* NEU: Generische Klasse für die Team-Überschriften */
+.team-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -294,7 +283,6 @@ h3 {
 .shuffle-btn.small {
   padding: 4px 8px;
   font-size: 0.8rem;
-  margin-left: 10px;
 }
 
 .main-content {

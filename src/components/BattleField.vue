@@ -644,46 +644,56 @@ async function opponentTurn() {
 .attack-details { font-size: 0.8rem; color: rgba(255, 255, 255, 0.9); white-space: nowrap; margin-top: -10px; }
 .pokemon-list, .item-list {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
   overflow-y: auto;
   min-height: 0;
-  padding-right: 5px;
+  padding: 10px;
 }
 .pokemon-option {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-items: center;
-  padding: 5px 10px;
+  padding: 5px;
   background-color: #e8e8e8;
   border-radius: 6px;
   border: 2px solid #b0b0b0;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  width: 100px;
 }
 .pokemon-option:hover {
   background-color: #d8d8d8;
-  transform: translateX(3px);
+  transform: scale(1.05);
 }
 .fainted { opacity: 0.6; pointer-events: none; }
 .switch-sprite {
-  width: 40px;
-  height: 40px;
-  margin-right: 15px;
+  width: 60px;
+  height: 60px;
+  margin-right: 0;
   image-rendering: pixelated;
 }
 .pokemon-info {
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  align-items: center;
+  width: 100%;
 }
 .pokemon-info span {
   font-family: 'Pokemon GB', monospace;
   color: #333;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
 }
-.small-health-bar { width: 90px; height: 6px; background: #666; border-radius: 3px; overflow: hidden; margin: 3px 0; }
-.small-health-text { font-size: 0.7rem; color: #555; text-align: right; }
+.small-health-bar { width: 80px; height: 6px; background: #666; border-radius: 3px; overflow: hidden; margin: 3px 0; }
+.small-health-text { font-size: 0.7rem; color: #555; text-align: center; }
 .item-option { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; grid-template-areas: "name count" "desc desc"; align-items: center; padding: 10px 15px; background-color: #e8e8e8; border-radius: 6px; border-left: 5px solid #4a90e2; cursor: pointer; transition: background-color 0.2s; }
 .item-option:hover { background-color: #d8d8d8; }
 .item-option.disabled { opacity: 0.5; pointer-events: none; border-left-color: #999; }
