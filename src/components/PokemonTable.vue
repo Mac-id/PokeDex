@@ -195,7 +195,7 @@ const entwicklePokemon = () => {
         </div>
       </div>
     </div>
-    <h1 class="dev">by Mac-Id</h1>
+    <h1 class="dev">by Mac-ID</h1>
     <img src="@/assets/pikachu.gif" alt="Pikachu" class="pikachu" />
   </div>
 </template>
