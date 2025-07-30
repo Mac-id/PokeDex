@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import type { Pokemon } from "../types";
 
+
 const props = defineProps<{
   initialPokemon: Pokemon;
   yourTeam: Pokemon[];

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from "vue";
 import type { Pokemon, Move } from "../types";
+import { inject } from "@vercel/analytics"
 
 // --- DATEN & KONSTANTEN ---
 const typeChart: {

@@ -3,7 +3,7 @@ import { ref, onMounted } from "vue";
 import EditPokemon from "./EditPokemon.vue";
 import PokemonTable from "./PokemonTable.vue";
 import BattleField from "./BattleField.vue";
-import { Analytics } from "@vercel/analytics/next"
+import { inject } from "@vercel/analytics"
 import type { Pokemon } from "../types";
 
 // Reaktive Zustände

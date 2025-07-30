@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import type { Pokemon } from "../types";
+import { inject } from "@vercel/analytics"
 
 const props = defineProps<{
   pokemonList: Pokemon[];
