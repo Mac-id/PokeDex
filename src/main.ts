@@ -1,13 +1,11 @@
-// Importiere die Funktion zum Erstellen der Vue-Anwendung
 import { createApp } from 'vue';
-// Importiere die Hauptkomponente der App
+import { createPinia } from 'pinia'; // Pinia importieren
 import App from './components/App.vue';
-// Importiere den Vue-Router für die Navigation
 import router from './router';
 
-// Erstelle die Vue-Anwendung mit der Hauptkomponente `App`
-// Binde den Router ein, damit Routing funktioniert
-// Und mounte die App an das HTML-Element mit der ID "app"
-createApp(App)
-  .use(router)
-  .mount('#app');
+const app = createApp(App);
+const pinia = createPinia(); // Pinia-Instanz erstellen
+
+app.use(pinia); // Pinia in der App registrieren
+app.use(router);
+app.mount('#app');
