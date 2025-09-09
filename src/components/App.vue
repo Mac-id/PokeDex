@@ -1,60 +1,73 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { usePokemonStore } from '../store/pokemonStore';
-import EditPokemon from "./EditPokemon.vue";
+import PokedexEntry from "./PokedexEntry.vue"; 
 import PokemonTable from "./PokemonTable.vue";
 import BattleField from "./BattleField.vue";
 import type { Pokemon } from "../types/index.ts";
 
 const store = usePokemonStore();
-
-// Lokaler UI-Zustand für das Bearbeiten-Modal
-const showEditForm = ref(false);
-const editingPokemon = ref<Pokemon | null>(null);
-
-// Beim Starten der App die Pokémon laden
-onMounted(() => {
-  store.loadInitialPokemon();
-});
-
-// Funktionen zur Steuerung des Modals
-const handleEdit = (pokemon: Pokemon) => {
-  editingPokemon.value = { ...pokemon };
-  showEditForm.value = true;
+const showPokedex = ref(false);
+const selectedPokemon = ref<Pokemon | null>(null);
+onMounted(() => { store.loadInitialPokemon(); });
+const openPokedex = (pokemon: Pokemon) => {
+  selectedPokemon.value = pokemon;
+  showPokedex.value = true;
 };
-
-const handleSave = (updatedPokemon: Pokemon) => {
-  store.updatePokemonInList(updatedPokemon, editingPokemon.value!.name);
-  showEditForm.value = false;
-  editingPokemon.value = null;
-};
-
-const handleCancel = () => {
-  showEditForm.value = false;
-  editingPokemon.value = null;
-};
+const closePokedex = () => { showPokedex.value = false; };
 </script>
 
 <template>
-  <div class="app-container">
-    <BattleField v-if="store.showBattle" />
-    
-    <PokemonTable v-if="!store.showBattle" @edit="handleEdit" />
-    
-    <EditPokemon
-      v-if="showEditForm && editingPokemon"
-      :initial-pokemon="editingPokemon"
-      @save="handleSave"
-      @cancel="handleCancel"
-    />
-  </div>
+  <v-app>
+    <v-main class="app-container">
+      <header class="header">
+        <img alt="Pokemon" class="logo" src="@/assets/pokemon-logo.png" />
+      </header>
+      <BattleField v-if="store.showBattle" />
+      <PokemonTable v-if="!store.showBattle" @open-pokedex="openPokedex" />
+      <PokedexEntry
+        v-if="showPokedex && selectedPokemon"
+        :pokemon="selectedPokemon"
+        :show="showPokedex"
+        @close="closePokedex"
+      />
+      <img src="@/assets/pikachu.gif" alt="Pika" class="pikachu" />
+    </v-main>
+  </v-app>
 </template>
 
 <style>
-/* Globale Styles bleiben hier */
-body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-.pokemon-table, .team-column { transition: opacity 0.3s ease; }
-.v-enter-active, .v-leave-active { transition: opacity 0.3s; }
-.v-enter-from, .v-leave-to { opacity: 0; }
-.app-container { position: relative; min-height: 100vh; background-image: url("@/assets/pokemon-bg.jpg"); background-size: cover; background-position: center; background-attachment: fixed; padding-top: 120px; box-sizing: border-box; }
+html { 
+  overflow: hidden !important; 
+}
+.v-application {
+  font-family: Consolas, 'Courier New', monospace;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+.app-container { background-image: url("@/assets/pokemon-bg.jpg") !important; background-size: cover; background-position: center; background-attachment: fixed; }
+
+/* FIX: Header auf ein Minimum reduziert, damit der Inhalt höher startet */
+.header {
+  position: relative;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.logo {
+  height: 90px;
+  position: absolute;
+  top: 25px;
+}
+
+.pikachu { position: fixed; bottom: 0; left: 0; height: 80px; animation: move-pikachu 15s linear infinite; pointer-events: none; z-index: 9999; }
+@keyframes move-pikachu {
+  0% { transform: translateX(0) scaleX(1); }
+  49.99% { transform: translateX(calc(100vw - 80px)) scaleX(1); }
+  50% { transform: translateX(calc(100vw - 80px)) scaleX(-1); }
+  99.99% { transform: translateX(0) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(1); }
+}
 </style>

@@ -8,6 +8,11 @@ export type Move = {
   };
   
   export type Pokemon = {
+    id: number; // NEU
+    height: number; // NEU (in Dezimetern)
+    weight: number; // NEU (in Hektogramm)
+    abilities: string[]; // NEU
+    flavorText: string;
     name: string;
     type: string;
     image: string;
