@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, nextTick } from "vue";
 import { usePokemonStore } from "../store/pokemonStore";
 import { useSearch } from "../composables/useSearch";
 import { storeToRefs } from "pinia";
@@ -32,80 +32,52 @@ const shuffleYourTeam = () => {
   const shuffled = [...pokemonList.value].sort(() => 0.5 - Math.random());
   store.updateYourTeam(shuffled.slice(0, 3));
 };
+
+// Logik für die interaktive Suchleiste
+const isSearchActive = ref(false);
+const searchInputRef = ref(null);
+
+const openSearch = async () => {
+  isSearchActive.value = true;
+  await nextTick();
+  if (searchInputRef.value) {
+    (searchInputRef.value as any).focus();
+  }
+};
+
+const closeSearch = () => {
+  isSearchActive.value = false;
+};
+
+// Logik für den Scroll-Button
+const teamsSectionRef = ref<HTMLElement | null>(null);
+
+const scrollToTeams = () => {
+  if (teamsSectionRef.value) {
+    teamsSectionRef.value.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+};
 </script>
 
 <template>
   <div id="pokemon-table-component">
     <div class="main-content">
-      <div class="team-column">
-        <div class="team-box">
-          <div class="team-header">
-            <h3>Dein Team ({{ yourTeam.length }}/3)</h3>
-            <v-btn @click="shuffleYourTeam" size="x-small" color="primary"
-              >Shuffle</v-btn
-            >
-          </div>
-          <div v-if="yourTeam.length === 0" class="team-placeholder">
-            Erstelle dein Team
-          </div>
-          <div v-else class="team-members">
-            <div
-              v-for="(pokemon, index) in yourTeam"
-              :key="'your-team-' + index"
-              class="pokemon-container"
-              @contextmenu.prevent="store.removeFromTeam(index)"
-            >
-              <img
-                :src="pokemon.image"
-                :alt="pokemon.name"
-                class="team-pokemon"
-                :title="pokemon.name"
-              />
-            </div>
-          </div>
-        </div>
-        <div class="team-box">
-          <div class="team-header">
-            <h3>Gegnerteam ({{ opponentTeam.length }}/3)</h3>
-            <v-btn
-              @click="shuffleOpponentTeam"
-              size="x-small"
-              color="orange-darken-2"
-              >Shuffle</v-btn
-            >
-          </div>
-          <div v-if="opponentTeam.length === 0" class="team-placeholder">
-            Kein Gegnerteam
-          </div>
-          <div v-else class="team-members">
-            <div
-              v-for="(pokemon, index) in opponentTeam"
-              :key="'opponent-team-' + index"
-              class="pokemon-container"
-              @contextmenu.prevent="store.removeFromOpponent(index)"
-            >
-              <img
-                :src="pokemon.image"
-                :alt="pokemon.name"
-                class="team-pokemon"
-                :title="pokemon.name"
-              />
-            </div>
-          </div>
-        </div>
-        <v-btn
-          v-if="yourTeam.length > 0 && opponentTeam.length > 0"
-          @click="store.startBattle"
-          class="battle-btn"
-        >
-          START BATTLE
-        </v-btn>
-      </div>
-
       <div class="table-column">
         <div class="search-container">
-          <div class="search-wrapper">
+          <v-btn
+            v-if="!isSearchActive"
+            @click="openSearch"
+            icon="mdi-magnify"
+            variant="flat"
+            color="white"
+            class="search-button"
+          ></v-btn>
+          <div v-else class="search-wrapper">
             <v-text-field
+              ref="searchInputRef"
               v-model="searchQuery"
               label="Suche..."
               variant="solo"
@@ -113,7 +85,12 @@ const shuffleYourTeam = () => {
               dense
               hide-details
               prepend-inner-icon="mdi-magnify"
+              append-inner-icon="mdi-close"
+              @click:append-inner="closeSearch"
+              @blur="closeSearch"
               class="search-input-custom"
+              bg-color= "secondary"
+              autofocus
             ></v-text-field>
           </div>
         </div>
@@ -138,14 +115,88 @@ const shuffleYourTeam = () => {
           </v-data-table>
         </div>
       </div>
+
+      <div class="scroll-down-container">
+        <v-btn
+          @click="scrollToTeams"
+          icon="mdi-arrow-down"
+          class="scroll-down-btn"
+          size="large"
+        ></v-btn>
+      </div>
+
+      <div class="team-column" ref="teamsSectionRef">
+        <div class="teams-wrapper">
+          <div class="team-box">
+            <div class="team-header">
+              <h3>Dein Team ({{ yourTeam.length }}/3)</h3>
+              <v-btn @click="shuffleYourTeam" size="x-small" color="primary"
+                >Shuffle</v-btn
+              >
+            </div>
+            <div v-if="yourTeam.length === 0" class="team-placeholder">
+              Erstelle dein Team
+            </div>
+            <div v-else class="team-members">
+              <div
+                v-for="(pokemon, index) in yourTeam"
+                :key="'your-team-' + index"
+                class="pokemon-container"
+                @contextmenu.prevent="store.removeFromTeam(index)"
+              >
+                <img
+                  :src="pokemon.image"
+                  :alt="pokemon.name"
+                  class="team-pokemon"
+                  :title="pokemon.name"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="team-box">
+            <div class="team-header">
+              <h3>Gegnerteam ({{ opponentTeam.length }}/3)</h3>
+              <v-btn
+                @click="shuffleOpponentTeam"
+                size="x-small"
+                color="orange-darken-2"
+                >Shuffle</v-btn
+              >
+            </div>
+            <div v-if="opponentTeam.length === 0" class="team-placeholder">
+              Kein Gegnerteam
+            </div>
+            <div v-else class="team-members">
+              <div
+                v-for="(pokemon, index) in opponentTeam"
+                :key="'opponent-team-' + index"
+                class="pokemon-container"
+                @contextmenu.prevent="store.removeFromOpponent(index)"
+              >
+                <img
+                  :src="pokemon.image"
+                  :alt="pokemon.name"
+                  class="team-pokemon"
+                  :title="pokemon.name"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <v-btn
+          v-if="yourTeam.length > 0 && opponentTeam.length > 0"
+          @click="store.startBattle"
+          class="battle-btn"
+        >
+          START BATTLE
+        </v-btn>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Durch die ID #pokemon-table-component am Anfang jeder Regel,
-   wird unser CSS jetzt extrem spezifisch und gewinnt gegen Vuetify. */
-
+/* --- DESKTOP-LAYOUT --- */
 #pokemon-table-component .main-content {
   display: flex;
   gap: 30px;
@@ -165,7 +216,14 @@ const shuffleYourTeam = () => {
   display: flex;
   flex-direction: column;
   gap: 25px;
-  margin-top: 70px;
+  /* FIX 2: Exakter Abstand oben, um auf Höhe der Tabelle zu sein */
+  margin-top: 64px;
+}
+
+#pokemon-table-component .teams-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 25px; /* Steuert NUR den Abstand ZWISCHEN den beiden Teamboxen */
 }
 
 #pokemon-table-component .team-box {
@@ -174,7 +232,8 @@ const shuffleYourTeam = () => {
   background-blend-mode: overlay;
   border: 6px solid #2070cc;
   border-radius: 8px;
-  padding: 15px;
+  padding: 10px;
+  gap:10px;
   min-height: 200px;
   display: flex;
   flex-direction: column;
@@ -244,20 +303,27 @@ const shuffleYourTeam = () => {
   margin-bottom: 16px;
   height: 48px;
 }
+#pokemon-table-component .search-button {
+  border: 3px solid #2070cc;
+  background-color: #ffd750 !important;
+}
 #pokemon-table-component .search-wrapper {
   width: 250px;
+  height: 100%;
   border: 5px solid #2070cc;
   border-radius: 28px;
-  margin-top:-8px;
   overflow: hidden;
+  background-color: white;
 }
 #pokemon-table-component .search-input-custom {
+  height: 100%;
+  :deep(.v-field) {
+    color: #ffd750 !important;
+    padding-right: 4px !important;
+  }
   :deep(.v-field__input) {
     color: #333 !important;
     font-weight: bold;
-  }
-  :deep(.v-field) {
-    background-color: rgb(255, 255, 255) !important;
   }
   :deep(label) {
     color: rgba(0, 0, 0, 0.6) !important;
@@ -277,6 +343,7 @@ const shuffleYourTeam = () => {
 }
 #pokemon-table-component :deep(.v-table__wrapper) {
   overflow-y: overlay !important;
+  padding-left: 8px;
 }
 #pokemon-table-component :deep(.v-table__wrapper::-webkit-scrollbar) {
   width: 8px;
@@ -285,7 +352,6 @@ const shuffleYourTeam = () => {
   background-color: #2e6ac4;
   border-radius: 4px;
 }
-
 #pokemon-table-component :deep(thead) {
   position: sticky !important;
   top: 0;
@@ -293,9 +359,8 @@ const shuffleYourTeam = () => {
 }
 #pokemon-table-component :deep(th) {
   background-color: #1d3e70 !important;
-  color: #ffd705 !important;
+  color: #ffd750 !important;
 }
-
 #pokemon-table-component :deep(tbody tr) {
   color: white;
   font-weight: bold;
@@ -311,5 +376,82 @@ const shuffleYourTeam = () => {
 }
 #pokemon-table-component :deep(td) {
   padding-left: 24px !important;
+}
+
+/* Scroll-Button ist auf dem Desktop NICHT SICHTBAR */
+#pokemon-table-component .scroll-down-container {
+  display: none;
+}
+
+/* --- MOBILE-ANSICHT (Alle Änderungen ausschließlich hier) --- */
+@media (max-width: 960px) {
+  #pokemon-table-component .main-content {
+    flex-direction: column;
+    align-items: center;
+    margin-top: 60px;
+    padding-bottom: 30px;
+  }
+
+  #pokemon-table-component .table-column,
+  #pokemon-table-component .team-column {
+    width: 100%;
+    max-width: 500px;
+    margin-top: 0; /* Margin-Top zurücksetzen für Flexbox-Layout */
+  }
+
+  #pokemon-table-component .team-column {
+    order: 3;
+  }
+
+  #pokemon-table-component .table-column {
+    order: 1;
+  }
+
+  #pokemon-table-component .search-container {
+    justify-content: center;
+  }
+
+  /* FIX 1: Höhe der Tabelle angepasst, damit der Button sichtbar ist */
+  #pokemon-table-component .tabelle-container {
+    height: calc(
+      100vh - 300px
+    ); /* Höhe = Bildschirmhöhe minus Header, Suchleiste und Button-Platz */
+  }
+
+  #pokemon-table-component .scroll-down-container {
+    display: flex;
+    justify-content: center;
+    order: 2;
+    margin-top: -5px; /* Reduziert den Abstand nach oben */
+    margin-bottom: 30px;
+  }
+  .scroll-down-btn {
+    background-color: #ffce08 !important;
+    color: black !important;
+    border: 3px solid #2070cc !important;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%,
+    20%,
+    50%,
+    80%,
+    100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-10px);
+    }
+    60% {
+      transform: translateY(-5px);
+    }
+  }
+
+  #pokemon-table-component :deep(tbody tr) {
+    font-size: 1rem;
+  }
+  #pokemon-table-component :deep(td) {
+    padding: 8px !important;
+  }
 }
 </style>

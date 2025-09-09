@@ -37,9 +37,12 @@ const closePokedex = () => { showPokedex.value = false; };
 </template>
 
 <style>
-html { 
+/* FIX: Die Regel, die das Scrollen der gesamten Seite verhindert hat, wurde entfernt. */
+/* html { 
   overflow: hidden !important; 
-}
+} 
+*/
+
 .v-application {
   font-family: Consolas, 'Courier New', monospace;
   -webkit-font-smoothing: none;
@@ -47,21 +50,19 @@ html {
 }
 .app-container { background-image: url("@/assets/pokemon-bg.jpg") !important; background-size: cover; background-position: center; background-attachment: fixed; }
 
-/* FIX: Header auf ein Minimum reduziert, damit der Inhalt höher startet */
 .header {
   position: relative;
-  height: 60px;
+  height: 70px;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
 }
 .logo {
-  height: 90px;
+  height: 85px;
   position: absolute;
-  top: 25px;
+  top: 30px;
 }
-
 .pikachu { position: fixed; bottom: 0; left: 0; height: 80px; animation: move-pikachu 15s linear infinite; pointer-events: none; z-index: 9999; }
 @keyframes move-pikachu {
   0% { transform: translateX(0) scaleX(1); }
@@ -69,5 +70,15 @@ html {
   50% { transform: translateX(calc(100vw - 80px)) scaleX(-1); }
   99.99% { transform: translateX(0) scaleX(-1); }
   100% { transform: translateX(0) scaleX(1); }
+}
+
+@media (max-width: 960px) {
+  .header {
+    height: 60px;
+  }
+  .logo {
+    height: 75px;
+    top: 25px;
+  }
 }
 </style>

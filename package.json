@@ -12,6 +12,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
     "@vercel/analytics": "^1.5.0",
     "pinia": "^3.0.2",
     "vue": "^3.5.13",
@@ -19,6 +20,8 @@
     "vuetify": "^3.9.7"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "@mdi/font": "^7.4.47",
     "@tsconfig/node22": "^22.0.2",
     "@types/node": "^22.15.23",

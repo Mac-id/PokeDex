@@ -190,4 +190,37 @@ onMounted(() => {
 .status-glow-animation { animation: status-glow 0.8s ease-in-out; }
 @keyframes status-glow { 0% { filter: brightness(1); } 50% { filter: brightness(2.5) drop-shadow(0 0 10px #a29bfe); } 100% { filter: brightness(1); } }
 .normal { --type-color: #a8a878; } .fire { --type-color: #f08030; } .water { --type-color: #6890f0; } .electric { --type-color: #f8d030; } .grass { --type-color: #78c850; } .ice { --type-color: #98d8d8; } .fighting { --type-color: #c03028; } .poison { --type-color: #a040a0; } .ground { --type-color: #e0c068; } .flying { --type-color: #a890f0; } .psychic { --type-color: #f85888; } .bug { --type-color: #a8b820; } .rock { --type-color: #b8a038; } .ghost { --type-color: #705898; } .dragon { --type-color: #7038f8; } .dark { --type-color: #705848; } .steel { --type-color: #b8b8d0; } .fairy { --type-color: #ee99ac; }
+
+
+@media (max-width: 900px) {
+  .health-bar-container {
+    width: 45%; /* Relative Breite statt fester Pixel */
+    padding: 4px 6px;
+  }
+  .pokemon-name {
+    font-size: 0.8rem;
+  }
+  .health-text {
+    font-size: 0.7rem;
+  }
+  .player-hp {
+    bottom: 160px; /* Menü ist kleiner, also kann die Leiste tiefer */
+  }
+
+  .battle-menu {
+    height: 150px; /* Menü wird deutlich kleiner */
+  }
+
+  /* Attacken werden untereinander gestapelt */
+  .attack-list {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .move {
+    padding: 6px;
+  }
+  .move-name {
+    font-size: 0.9rem;
+  }
+}
 </style>

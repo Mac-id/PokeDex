@@ -19,7 +19,7 @@ const vuetify = createVuetify({
         dark: false,
         colors: {
           primary: '#2070cc',
-          secondary: '#e4c932',
+          secondary: '#ffd750',
           // FIX: Die 'surface'-Farbe wird entfernt, damit Komponenten wieder standardmäßig weiß sind.
         }
       }
