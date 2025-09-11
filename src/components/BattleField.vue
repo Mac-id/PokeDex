@@ -464,12 +464,12 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .back-btn {
-  padding: 10px 18px;
+  padding: 3px 12px;
   background-color: #e0e0e0;
   border: 3px solid #a0a0a0;
   border-radius: 8px;
   font-family: "Pokemon GB", monospace;
-  font-size: 16px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
   align-self: flex-start;
@@ -483,16 +483,28 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
+
+/* KORREKTUR: .pokemon-list aus dieser Regel entfernt */
 .attack-list,
-.pokemon-list,
 .item-list {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Standardmäßig 2 Spalten für Desktop */
+  grid-template-columns: 1fr 1fr; /* 2 Spalten für Attacken und Items */
   gap: 12px;
   overflow-y: auto;
   flex-grow: 1;
   padding-right: 10px;
 }
+
+/* KORREKTUR: Eigene Flexbox-Regel für die Pokémon-Liste hinzugefügt */
+.pokemon-list {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+
 .move {
   background-color: rgba(60, 60, 60, 0.8);
   padding: 10px;
@@ -900,18 +912,13 @@ onMounted(() => {
   }
   .player-hp {
     /* Muss höher sein, um Platz für das vergrößerte battle-menu zu lassen */
-    bottom: 31%; /* Angepasst */
-    right: 5%; /* Etwas mehr Abstand vom rechten Rand */
-  }
-
-  .enemy-hp {
-    top: 10%; /* Angepasst */
-    left: 5%;
+    bottom: 30vh; /* Angepasst */
+    right: 3vh; /* Etwas mehr Abstand vom rechten Rand */
   }
 
   /* FIX: battle-menu Höhe auf Mobile anpassen, damit mehr Platz für Inhalt ist */
   .battle-menu {
-    height: 250px; /* Oder eine andere Höhe, die du für passend hältst */
+    height: 230px; /* Oder eine andere Höhe, die du für passend hältst */
     padding: 10px; /* Etwas weniger Padding */
   }
 

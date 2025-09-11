@@ -8,6 +8,10 @@ export const usePokemonStore = defineStore("pokemon", {
     yourTeam: [] as Pokemon[],
     opponentTeam: [] as Pokemon[],
     showBattle: false,
+    // Status für den Ladevorgang
+    isLoading: true,
+    loadingProgress: 0,
+    loadingStatusText: "Initialisiere...",
   }),
 
   // Aktionen, um den Zustand zu verändern
@@ -46,33 +50,46 @@ export const usePokemonStore = defineStore("pokemon", {
     },
 
     async loadInitialPokemon() {
-      if (this.pokemonList.length > 0) return; // Nicht erneut laden
+      // 1. Zuerst im Cache (localStorage) nachsehen
+      const cachedPokemon = localStorage.getItem('pokemonList');
+      if (cachedPokemon) {
+        this.pokemonList = JSON.parse(cachedPokemon);
+        this.isLoading = false; // Ladevorgang sofort beenden
+        console.log("Pokémon direkt aus dem Cache geladen!");
+        return;
+      }
+
+      // 2. Wenn nichts im Cache ist, von der API laden
+      if (this.pokemonList.length > 0) return;
+
       try {
+        this.isLoading = true;
+        this.loadingStatusText = "Lade Pokémon-Liste...";
         const listResponse = await fetch(
           "https://pokeapi.co/api/v2/pokemon?limit=1025"
         );
         const listData = await listResponse.json();
-        const loadPokemonDetails = async (
-          pokemon: { name: string; url: string },
-          delay: number
-        ): Promise<Pokemon> => {
-          await new Promise((resolve) => setTimeout(resolve, delay));
+        // Performance-Verbesserung: Nur die ersten 151 laden
+        const pokemonToLoad = listData.results.slice(0, 151);
+
+        const loadedPokemonBatch: Pokemon[] = [];
+
+        for (let i = 0; i < pokemonToLoad.length; i++) {
+          const pokemon = pokemonToLoad[i];
           const res = await fetch(pokemon.url);
           const details = await res.json();
-          const spriteList = [];
-          const spriteData = details.sprites;
-          for (const key in spriteData) {
-            if (spriteData[key] && typeof spriteData[key] === "string") {
-              spriteList.push(spriteData[key]);
-            }
-          }
+
+          // Fortschritt und Text aktualisieren
+          this.loadingProgress = Math.round(((i + 1) / pokemonToLoad.length) * 100);
+          const capitalizedName = details.name.charAt(0).toUpperCase() + details.name.slice(1);
+          this.loadingStatusText = `Lade Details für ${capitalizedName}...`;
+
           let flavorText = "Keine Beschreibung verfügbar.";
           try {
             const speciesRes = await fetch(details.species.url);
             const speciesData = await speciesRes.json();
-            // Wir suchen nach dem ersten deutschen Lexikon-Eintrag, ansonsten nehmen wir Englisch
-            const germanEntry = speciesData.flavor_text_entries.find((entry: { language: { name: string } }) => entry.language.name === 'de');
-      const englishEntry = speciesData.flavor_text_entries.find((entry: { language: { name: string }, flavor_text: string }) => entry.language.name === 'en');
+            const germanEntry = speciesData.flavor_text_entries.find((entry: any) => entry.language.name === 'de');
+            const englishEntry = speciesData.flavor_text_entries.find((entry: any) => entry.language.name === 'en');
             if (germanEntry) {
               flavorText = germanEntry.flavor_text.replace(/\f/g, ' ');
             } else if (englishEntry) {
@@ -81,39 +98,41 @@ export const usePokemonStore = defineStore("pokemon", {
           } catch (e) {
             console.error("Failed to load species data", e);
           }
-          const sprites = spriteList.filter(Boolean);
-          return {
+
+          // Pokémon-Objekt erstellen
+          const newPokemon: Pokemon = {
             id: details.id,
             height: details.height,
             weight: details.weight,
             abilities: details.abilities.map((a: any) => a.ability.name),
             flavorText: flavorText,
-            name: details.name.charAt(0).toUpperCase() + details.name.slice(1),
+            name: capitalizedName,
             type: details.types.map((t: any) => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)).join(" / "),
             image: details.sprites.front_default,
-            // FIX 2: Die stats-Eigenschaft wurde versehentlich doppelt eingefügt.
-            // Wir behalten nur die korrekte, detaillierte Version.
             stats: { hp: details.stats.find((s: any) => s.stat.name === 'hp')?.base_stat || 0, attack: details.stats.find((s: any) => s.stat.name === 'attack')?.base_stat || 0, defense: details.stats.find((s: any) => s.stat.name === 'defense')?.base_stat || 0, speed: details.stats.find((s: any) => s.stat.name === 'speed')?.base_stat || 0 },
-            moves: undefined, // Wird später geladen
+            moves: undefined,
             moveUrls: details.moves.slice(0, 4).map((m: any) => m.move.url),
-            sprites: sprites,
+            sprites: [], // Sprites hier nicht mehr laden, um API-Anfragen zu sparen
           };
-        };
-        const batchSize = 100;
-        for (let i = 0; i < listData.results.length; i += batchSize) {
-          const batch = listData.results.slice(i, i + batchSize);
-          const batchResults = await Promise.all(
-            batch.map((p: { name: string; url: string }, idx: number) =>
-              loadPokemonDetails(p, idx * 100)
-            )
-          );
-          this.pokemonList.push(...batchResults);
+          loadedPokemonBatch.push(newPokemon);
         }
+        
+        this.pokemonList = loadedPokemonBatch;
+
+        // Attacken für die ersten 20 Pokémon vorladen
+        this.loadingStatusText = "Bereite Attacken vor...";
         for (let i = 0; i < Math.min(20, this.pokemonList.length); i++) {
           await this.loadMoveDetails(this.pokemonList[i]);
         }
       } catch (error) {
         console.error("Initial load failed:", error);
+        this.loadingStatusText = "Fehler beim Laden!";
+      } finally {
+        // 3. Nach erfolgreichem Laden im Cache für die Zukunft speichern
+        if(this.pokemonList.length > 0) {
+            localStorage.setItem('pokemonList', JSON.stringify(this.pokemonList));
+        }
+        this.isLoading = false;
       }
     },
 
