@@ -304,7 +304,7 @@ onMounted(() => {
   background-size: contain; /* WICHTIG: Behält Seitenverhältnis und zeigt ganzes Bild */
   background-position: center top;
   background-repeat: no-repeat;
-  border-radius: 8px;
+  border-radius: 0%;
   position: relative;
   overflow: hidden;
   opacity: 0;
@@ -325,9 +325,9 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   z-index: 10001;
-  border-radius: 16px;
   opacity: 1;
   transition: opacity 0.5s ease-out;
+  overflow: hidden;
 }
 .battle-start-animation.fade-out {
   opacity: 0;
@@ -872,12 +872,14 @@ onMounted(() => {
     border-radius: 0;
     border-left: none;
     border-right: none;
+    overflow: hidden;
   }
 
   /* FIX: Hintergrundbild für Mobile */
   .battle-background {
     background-size: cover; /* Passt das Bild an und füllt den gesamten Bereich */
     background-position: center center; /* Zentriert das Bild */
+    border-radius: 0%;
   }
 
   /* FIX: Schriftgröße für "Ein wildes XY erscheint!" auf Mobilgeräten */
@@ -989,7 +991,7 @@ onMounted(() => {
 
   /* Überschriften in den Menüs */
   .attack-menu h3,
-  .pokemon-switch-menu h3,
+  .pokemon-switch-menu h3,wa
   .item-menu h3 {
     font-size: 1rem; /* Etwas kleinere Überschriften */
   }

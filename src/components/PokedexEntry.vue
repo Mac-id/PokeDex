@@ -105,13 +105,13 @@ const getEffectiveness = (move: Move): string => {
           v-if="store.yourTeam.length < 3"
           class="action-btn add-team-btn" @click="store.addToTeam(pokemon)"
           size="small" >
-          Team
+          Ins Team
         </v-btn>
         <v-btn
           v-if="store.opponentTeam.length < 3"
           class="action-btn add-opponent-btn" @click="store.addToOpponentTeam(pokemon)"
           size="small" >
-          Gegner
+          Ins Gegnerteam
         </v-btn>
         <v-spacer class="mobile-spacer"></v-spacer> <v-btn class="action-btn close-btn" text @click="emit('close')" size="small">Schließen</v-btn> </v-card-actions>
     </v-card>
