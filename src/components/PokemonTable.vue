@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted } from "vue";
+import { ref, nextTick, onMounted, onUnmounted } from "vue"; // 'onUnmounted' hinzugefügt
 import { usePokemonStore } from "../store/pokemonStore";
 import { useSearch } from "../composables/useSearch";
 import { storeToRefs } from "pinia";
@@ -51,11 +51,10 @@ const closeSearch = () => {
 
 // --- LOGIK FÜR DEN SCROLL-BUTTON (ANGEPASST) ---
 const teamsSectionRef = ref<HTMLElement | null>(null);
-// 'topSectionRef' ist hier NICHT mehr nötig, da wir window.scrollTo verwenden
 const scrolledDown = ref(false);
 
 const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: "smooth" }); // Scrollt zum absoluten Seitenanfang
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 const scrollToTeams = () => {
@@ -75,18 +74,37 @@ const handleScrollButtonClick = () => {
   }
 };
 
+// --- NEU: LOGIK FÜR DAS NACHLADEN BEIM SCROLLEN ---
+const tableContainerRef = ref<HTMLElement | null>(null);
+
+const handleScroll = (event: Event) => {
+  const target = event.target as HTMLElement;
+  // Prüfen, ob der Nutzer am Ende der Liste angekommen ist (mit einem Puffer von 200px)
+  if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
+    store.loadMorePokemon(); // Store-Action zum Nachladen aufrufen
+  }
+};
+
 onMounted(() => {
   const observer = new IntersectionObserver(
     ([entry]) => {
-      // Wenn das Team-Element zu mehr als 10% sichtbar ist, sind wir "unten"
       scrolledDown.value = entry.isIntersecting;
     },
-    { threshold: 0.1 } // Schwellenwert: 10% des Elements sichtbar
+    { threshold: 0.1 }
   );
 
   if (teamsSectionRef.value) {
     observer.observe(teamsSectionRef.value);
   }
+
+  // NEU: Event Listener für das Nachladen hinzufügen
+  nextTick(() => {
+    const tableWrapper = document.querySelector(".v-table__wrapper");
+    if (tableWrapper) {
+      tableWrapper.addEventListener("scroll", handleScroll);
+      tableContainerRef.value = tableWrapper as HTMLElement;
+    }
+  });
 
   // Cleanup bei Komponenten-Unmount
   return () => {
@@ -95,12 +113,19 @@ onMounted(() => {
     }
   };
 });
+
+// NEU: Den Event Listener beim Verlassen der Seite entfernen
+onUnmounted(() => {
+  if (tableContainerRef.value) {
+    tableContainerRef.value.removeEventListener("scroll", handleScroll);
+  }
+});
 </script>
 
 <template>
   <div id="pokemon-table-component">
     <div class="main-content">
-      <div class="table-column" ref="topSectionRef">
+      <div class="table-column">
         <div class="search-container">
           <v-btn
             v-if="!isSearchActive"
@@ -146,6 +171,13 @@ onMounted(() => {
                   <v-img :src="item.image" height="80" contain></v-img>
                 </td>
               </tr>
+            </template>
+
+            <template v-slot:bottom>
+              <div v-if="store.isLoadingMore" class="loading-more-container">
+                <v-progress-circular indeterminate color="secondary"></v-progress-circular>
+                <span>Lade weitere Pokémon...</span>
+              </div>
             </template>
           </v-data-table>
         </div>
@@ -356,17 +388,17 @@ onMounted(() => {
 }
 #pokemon-table-component .search-input-custom {
   height: 100%;
-  :deep(.v-field) {
-    color: #ffcc24 !important;
-    padding-right: 4px !important;
-  }
-  :deep(.v-field__input) {
-    color: #333 !important;
-    font-weight: bold;
-  }
-  :deep(label) {
-    color: rgba(0, 0, 0, 0.6) !important;
-  }
+}
+#pokemon-table-component .search-input-custom :deep(.v-field) {
+  color: #ffcc24 !important;
+  padding-right: 4px !important;
+}
+#pokemon-table-component .search-input-custom :deep(.v-field__input) {
+  color: #333 !important;
+  font-weight: bold;
+}
+#pokemon-table-component .search-input-custom :deep(label) {
+  color: rgba(0, 0, 0, 0.6) !important;
 }
 #pokemon-table-component .tabelle-container {
   border-radius: 10px;
@@ -416,7 +448,18 @@ onMounted(() => {
   padding-left: 24px !important;
 }
 
-/* NEU: Scroll-Button standardmäßig unsichtbar */
+/* NEU: Styling für die Ladeanzeige */
+.loading-more-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  gap: 15px;
+  color: white;
+  font-weight: bold;
+  background-color: rgba(29, 62, 112, 0.8);
+}
+
 #pokemon-table-component .scroll-down-container {
   display: none;
 }
@@ -455,7 +498,6 @@ onMounted(() => {
     width: 100%;
   }
 
-  /* NEU: Styling für den Scroll-Button */
   #pokemon-table-component .scroll-down-container {
     display: flex;
     justify-content: center;

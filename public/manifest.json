@@ -1,0 +1,15 @@
+{
+    "name": "Pokédex App",
+    "short_name": "Pokédex",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "description": "Eine Pokémon-Anwendung.",
+    "icons": [
+      {
+        "src": "/favicon.ico",
+        "sizes": "48x48",
+        "type": "image/x-icon"
+      }
+    ]
+  }

@@ -1,22 +1,28 @@
 import { defineStore } from "pinia";
 import type { Pokemon, Move } from "../types";
 
+// Ein Interface für die Pokémon-Liste aus der API
+interface PokemonListItem {
+  name: string;
+  url: string;
+}
+
 export const usePokemonStore = defineStore("pokemon", {
-  // Globaler Zustand der Anwendung
   state: () => ({
     pokemonList: [] as Pokemon[],
     yourTeam: [] as Pokemon[],
     opponentTeam: [] as Pokemon[],
     showBattle: false,
-    // Status für den Ladevorgang
     isLoading: true,
     loadingProgress: 0,
     loadingStatusText: "Initialisiere...",
+    // Eigene Zustände für das schrittweise Laden
+    fullPokemonUrlList: [] as PokemonListItem[],
+    isLoadingMore: false,
+    allPokemonLoaded: false,
   }),
 
-  // Aktionen, um den Zustand zu verändern
   actions: {
-    // --- API & DATENLADEN ---
     async loadMoveDetails(pokemon: Pokemon): Promise<void> {
       if (!pokemon.moveUrls || pokemon.moves) return;
       try {
@@ -50,93 +56,99 @@ export const usePokemonStore = defineStore("pokemon", {
     },
 
     async loadInitialPokemon() {
-      // 1. Zuerst im Cache (localStorage) nachsehen
-      const cachedPokemon = localStorage.getItem('pokemonList');
-      if (cachedPokemon) {
-        this.pokemonList = JSON.parse(cachedPokemon);
-        this.isLoading = false; // Ladevorgang sofort beenden
-        console.log("Pokémon direkt aus dem Cache geladen!");
+      const cachedList = localStorage.getItem('pokemonList');
+      if (cachedList) {
+        this.pokemonList = JSON.parse(cachedList);
+        if (this.pokemonList.length >= 1025) {
+            this.allPokemonLoaded = true;
+        }
+        this.isLoading = false;
         return;
       }
-
-      // 2. Wenn nichts im Cache ist, von der API laden
-      if (this.pokemonList.length > 0) return;
 
       try {
         this.isLoading = true;
         this.loadingStatusText = "Lade Pokémon-Liste...";
-        const listResponse = await fetch(
-          "https://pokeapi.co/api/v2/pokemon?limit=1025"
-        );
-        const listData = await listResponse.json();
-        // Performance-Verbesserung: Nur die ersten 151 laden
-        const pokemonToLoad = listData.results.slice(0, 151);
-
-        const loadedPokemonBatch: Pokemon[] = [];
-
-        for (let i = 0; i < pokemonToLoad.length; i++) {
-          const pokemon = pokemonToLoad[i];
-          const res = await fetch(pokemon.url);
-          const details = await res.json();
-
-          // Fortschritt und Text aktualisieren
-          this.loadingProgress = Math.round(((i + 1) / pokemonToLoad.length) * 100);
-          const capitalizedName = details.name.charAt(0).toUpperCase() + details.name.slice(1);
-          this.loadingStatusText = `Lade Details für ${capitalizedName}...`;
-
-          let flavorText = "Keine Beschreibung verfügbar.";
-          try {
-            const speciesRes = await fetch(details.species.url);
-            const speciesData = await speciesRes.json();
-            const germanEntry = speciesData.flavor_text_entries.find((entry: any) => entry.language.name === 'de');
-            const englishEntry = speciesData.flavor_text_entries.find((entry: any) => entry.language.name === 'en');
-            if (germanEntry) {
-              flavorText = germanEntry.flavor_text.replace(/\f/g, ' ');
-            } else if (englishEntry) {
-              flavorText = englishEntry.flavor_text.replace(/\f/g, ' ');
-            }
-          } catch (e) {
-            console.error("Failed to load species data", e);
-          }
-
-          // Pokémon-Objekt erstellen
-          const newPokemon: Pokemon = {
-            id: details.id,
-            height: details.height,
-            weight: details.weight,
-            abilities: details.abilities.map((a: any) => a.ability.name),
-            flavorText: flavorText,
-            name: capitalizedName,
-            type: details.types.map((t: any) => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)).join(" / "),
-            image: details.sprites.front_default,
-            stats: { hp: details.stats.find((s: any) => s.stat.name === 'hp')?.base_stat || 0, attack: details.stats.find((s: any) => s.stat.name === 'attack')?.base_stat || 0, defense: details.stats.find((s: any) => s.stat.name === 'defense')?.base_stat || 0, speed: details.stats.find((s: any) => s.stat.name === 'speed')?.base_stat || 0 },
-            moves: undefined,
-            moveUrls: details.moves.slice(0, 4).map((m: any) => m.move.url),
-            sprites: [], // Sprites hier nicht mehr laden, um API-Anfragen zu sparen
-          };
-          loadedPokemonBatch.push(newPokemon);
-        }
+        const response = await fetch("https://pokeapi.co/api/v2/pokemon?limit=1025");
+        const data = await response.json();
+        this.fullPokemonUrlList = data.results;
         
-        this.pokemonList = loadedPokemonBatch;
+        await this.loadMorePokemon();
 
-        // Attacken für die ersten 20 Pokémon vorladen
-        this.loadingStatusText = "Bereite Attacken vor...";
-        for (let i = 0; i < Math.min(20, this.pokemonList.length); i++) {
-          await this.loadMoveDetails(this.pokemonList[i]);
-        }
       } catch (error) {
-        console.error("Initial load failed:", error);
+        console.error("Fehler beim Laden der Pokémon-Liste:", error);
         this.loadingStatusText = "Fehler beim Laden!";
       } finally {
-        // 3. Nach erfolgreichem Laden im Cache für die Zukunft speichern
-        if(this.pokemonList.length > 0) {
-            localStorage.setItem('pokemonList', JSON.stringify(this.pokemonList));
-        }
         this.isLoading = false;
       }
     },
 
-    // --- TEAM-MANAGEMENT ---
+    async loadMorePokemon() {
+      if (this.isLoadingMore || this.allPokemonLoaded) return;
+
+      this.isLoadingMore = true;
+      const currentCount = this.pokemonList.length;
+      const nextBatch = this.fullPokemonUrlList.slice(currentCount, currentCount + 50);
+
+      if (nextBatch.length === 0) {
+        this.allPokemonLoaded = true;
+        this.isLoadingMore = false;
+        return;
+      }
+
+      try {
+        const detailPromises = nextBatch.map(pokemon => fetch(pokemon.url).then(res => res.json()));
+        const detailsList = await Promise.all(detailPromises);
+
+        for (const details of detailsList) {
+          let flavorText = "Keine Beschreibung verfügbar.";
+          try {
+              const speciesRes = await fetch(details.species.url);
+              const speciesData = await speciesRes.json();
+              const germanEntry = speciesData.flavor_text_entries.find((entry: any) => entry.language.name === 'de');
+              const englishEntry = speciesData.flavor_text_entries.find((entry: any) => entry.language.name === 'en');
+              if (germanEntry) {
+                flavorText = germanEntry.flavor_text.replace(/\f/g, ' ');
+              } else if (englishEntry) {
+                flavorText = englishEntry.flavor_text.replace(/\f/g, ' ');
+              }
+          } catch(e) {
+              console.error(`Konnte Spezies-Daten für ${details.name} nicht laden:`, e);
+          }
+          
+          const capitalizedName = details.name.charAt(0).toUpperCase() + details.name.slice(1);
+          
+          this.pokemonList.push({
+            id: details.id,
+            height: details.height,
+            weight: details.weight,
+            abilities: details.abilities.map((a: any) => a.ability.name),
+            flavorText,
+            name: capitalizedName,
+            type: details.types.map((t: any) => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)).join(" / "),
+            image: details.sprites.front_default,
+            // KORRIGIERT: Die robustere Methode zum Auslesen der Stats wird wieder verwendet
+            stats: { 
+                hp: details.stats.find((s: any) => s.stat.name === 'hp')?.base_stat || 0, 
+                attack: details.stats.find((s: any) => s.stat.name === 'attack')?.base_stat || 0, 
+                defense: details.stats.find((s: any) => s.stat.name === 'defense')?.base_stat || 0, 
+                speed: details.stats.find((s: any) => s.stat.name === 'speed')?.base_stat || 0 
+            },
+            moveUrls: details.moves.slice(0, 4).map((m: any) => m.move.url),
+            moves: undefined,
+            sprites: [],
+          });
+        }
+        
+        localStorage.setItem('pokemonList', JSON.stringify(this.pokemonList));
+      } catch (error) {
+        console.error("Fehler beim Nachladen der Pokémon-Details:", error);
+      } finally {
+        this.isLoadingMore = false;
+      }
+    },
+    
+    // ... Die restlichen actions (addToTeam etc.) bleiben unverändert ...
     addToTeam(pokemon: Pokemon) {
       if (this.yourTeam.length >= 3) {
         alert("Dein Team ist bereits voll (max. 3 Pokémon)!");
@@ -163,8 +175,6 @@ export const usePokemonStore = defineStore("pokemon", {
     updateYourTeam(shuffled: Pokemon[]) {
       this.yourTeam = shuffled;
     },
-
-    // --- KAMPF-STEUERUNG ---
     startBattle() {
       this.showBattle = true;
     },
@@ -177,8 +187,6 @@ export const usePokemonStore = defineStore("pokemon", {
         this.yourTeam.unshift(pokemon);
       }
     },
-
-    // --- POKEMON BEARBEITEN ---
     updatePokemonInList(updatedPokemon: Pokemon, originalName: string) {
       const index = this.pokemonList.findIndex((p) => p.name === originalName);
       if (index !== -1) {
