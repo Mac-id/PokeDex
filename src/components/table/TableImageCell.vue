@@ -16,7 +16,7 @@ defineProps<{ pokemon: Pokemon }>();
 
 <style scoped>
 .pokemon-image {
-  width: 50px;  /* Feste Größe für Konsistenz */
+  width: 50px;  
   height: 50px;
   object-fit: contain;
 }

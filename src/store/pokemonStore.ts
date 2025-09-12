@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import type { Pokemon, Move } from "../types";
 
-// Ein Interface für die Pokémon-Liste aus der API
 interface PokemonListItem {
   name: string;
   url: string;
@@ -16,7 +15,6 @@ export const usePokemonStore = defineStore("pokemon", {
     isLoading: true,
     loadingProgress: 0,
     loadingStatusText: "Initialisiere...",
-    // Eigene Zustände für das schrittweise Laden
     fullPokemonUrlList: [] as PokemonListItem[],
     isLoadingMore: false,
     allPokemonLoaded: false,
@@ -127,7 +125,6 @@ export const usePokemonStore = defineStore("pokemon", {
             name: capitalizedName,
             type: details.types.map((t: any) => t.type.name.charAt(0).toUpperCase() + t.type.name.slice(1)).join(" / "),
             image: details.sprites.front_default,
-            // KORRIGIERT: Die robustere Methode zum Auslesen der Stats wird wieder verwendet
             stats: { 
                 hp: details.stats.find((s: any) => s.stat.name === 'hp')?.base_stat || 0, 
                 attack: details.stats.find((s: any) => s.stat.name === 'attack')?.base_stat || 0, 
@@ -148,7 +145,6 @@ export const usePokemonStore = defineStore("pokemon", {
       }
     },
     
-    // ... Die restlichen actions (addToTeam etc.) bleiben unverändert ...
     addToTeam(pokemon: Pokemon) {
       if (this.yourTeam.length >= 3) {
         alert("Dein Team ist bereits voll (max. 3 Pokémon)!");

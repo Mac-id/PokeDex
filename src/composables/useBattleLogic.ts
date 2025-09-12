@@ -1,13 +1,11 @@
 import { ref, computed, watch } from "vue";
 import type { Pokemon, Move } from "../types";
-import { typeChart } from "../data/constants"; // Statische Daten importieren
+import { typeChart } from "../data/constants"; 
 import { usePokemonStore } from "../store/pokemonStore";
 
-// Dieses Composable enthält die gesamte Logik für eine einzelne Schlacht.
 export function useBattleLogic() {
   const store = usePokemonStore();
 
-  // Lokaler Zustand der Schlacht
   const activeMenu = ref<"main" | "attack" | "pokemon" | "item" | "message">(
     "main"
   );
@@ -23,7 +21,6 @@ export function useBattleLogic() {
   const yourStatMods = ref({ attack: 0, defense: 0 });
   const opponentStatMods = ref({ attack: 0, defense: 0 });
 
-  // Animation states
   const playerAttacking = ref(false);
   const opponentAttacking = ref(false);
   const playerEntering = ref(false);
@@ -36,7 +33,6 @@ export function useBattleLogic() {
   const damageTarget = ref("");
   const showFaintMessage = ref(false);
 
-  // Computed Properties leiten Zustand ab
   const yourActivePokemon = computed(() => store.yourTeam?.[0]);
   const opponentActivePokemon = computed(() => store.opponentTeam?.[0]);
   const yourHPPercentage = computed(
@@ -54,7 +50,6 @@ export function useBattleLogic() {
     () => opponentActivePokemon.value?.moves || []
   );
 
-  // Watchers, um auf Team-Änderungen zu reagieren
   watch(
     () => store.yourTeam[0],
     (newPokemon, oldPokemon) => {
@@ -95,7 +90,6 @@ export function useBattleLogic() {
     { immediate: true }
   );
 
-  // Battle Logic Methoden
   async function displayMessage(message: string, duration: number = 1500) {
     activeMenu.value = "message";
     battleMessage.value = message;
@@ -356,7 +350,6 @@ export function useBattleLogic() {
     activeMenu.value = "main";
   }
 
-  // Initialisierungsfunktion für die Schlacht
   async function initializeBattle() {
     currentHealth.value = store.yourTeam.map((p) => p.stats?.hp || 100);
     opponentHealth.value = store.opponentTeam.map((p) => p.stats?.hp || 100);

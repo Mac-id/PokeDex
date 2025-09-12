@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onUnmounted } from "vue"; // 'onUnmounted' hinzugefügt
+import { ref, nextTick, onMounted, onUnmounted } from "vue"; 
 import { usePokemonStore } from "../store/pokemonStore";
 import { useSearch } from "../composables/useSearch";
 import { storeToRefs } from "pinia";
@@ -33,7 +33,6 @@ const shuffleYourTeam = () => {
   store.updateYourTeam(shuffled.slice(0, 3));
 };
 
-// Logik für die interaktive Suchleiste
 const isSearchActive = ref(false);
 const searchInputRef = ref(null);
 
@@ -49,7 +48,6 @@ const closeSearch = () => {
   isSearchActive.value = false;
 };
 
-// --- LOGIK FÜR DEN SCROLL-BUTTON (ANGEPASST) ---
 const teamsSectionRef = ref<HTMLElement | null>(null);
 const scrolledDown = ref(false);
 
@@ -74,14 +72,13 @@ const handleScrollButtonClick = () => {
   }
 };
 
-// --- NEU: LOGIK FÜR DAS NACHLADEN BEIM SCROLLEN ---
+
 const tableContainerRef = ref<HTMLElement | null>(null);
 
 const handleScroll = (event: Event) => {
   const target = event.target as HTMLElement;
-  // Prüfen, ob der Nutzer am Ende der Liste angekommen ist (mit einem Puffer von 200px)
   if (target.scrollTop + target.clientHeight >= target.scrollHeight - 200) {
-    store.loadMorePokemon(); // Store-Action zum Nachladen aufrufen
+    store.loadMorePokemon(); 
   }
 };
 
@@ -97,7 +94,6 @@ onMounted(() => {
     observer.observe(teamsSectionRef.value);
   }
 
-  // NEU: Event Listener für das Nachladen hinzufügen
   nextTick(() => {
     const tableWrapper = document.querySelector(".v-table__wrapper");
     if (tableWrapper) {
@@ -106,7 +102,6 @@ onMounted(() => {
     }
   });
 
-  // Cleanup bei Komponenten-Unmount
   return () => {
     if (teamsSectionRef.value) {
       observer.unobserve(teamsSectionRef.value);
@@ -114,7 +109,7 @@ onMounted(() => {
   };
 });
 
-// NEU: Den Event Listener beim Verlassen der Seite entfernen
+
 onUnmounted(() => {
   if (tableContainerRef.value) {
     tableContainerRef.value.removeEventListener("scroll", handleScroll);
@@ -265,7 +260,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* DEIN BESTEHENDES CSS BLEIBT ERHALTEN */
 #pokemon-table-component .main-content {
   display: flex;
   gap: 30px;
@@ -448,7 +442,6 @@ onUnmounted(() => {
   padding-left: 24px !important;
 }
 
-/* NEU: Styling für die Ladeanzeige */
 .loading-more-container {
   display: flex;
   justify-content: center;
@@ -464,7 +457,6 @@ onUnmounted(() => {
   display: none;
 }
 
-/* --- MOBILE-ANSICHT --- */
 @media (max-width: 960px) {
   #pokemon-table-component .main-content {
     flex-direction: column;

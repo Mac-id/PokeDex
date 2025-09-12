@@ -2,7 +2,6 @@
 import type { Pokemon } from '../../types';
 defineProps<{ pokemon: Pokemon }>();
 
-// Die Logik, die spezifisch für diese Spalte ist, zieht hierher um.
 const entwicklePokemon = () => {
   alert("Kakuna entwickelt sich zu Beedrill!");
 };
@@ -22,7 +21,6 @@ const entwicklePokemon = () => {
 </template>
 
 <style scoped>
-/* Styles, die nur diese Spalte betreffen */
 .pid {
   color: #2070cc;
   font-weight: bold;
@@ -36,7 +34,7 @@ const entwicklePokemon = () => {
   font-family: monaco, monospace;
   font-size: 0.8rem;
   cursor: pointer;
-  margin-left: 8px; /* Kleiner Abstand */
+  margin-left: 8px;
 }
 .btn:active {
   transform: translateY(2px);

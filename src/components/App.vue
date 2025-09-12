@@ -4,7 +4,7 @@ import { usePokemonStore } from '../store/pokemonStore';
 import PokedexEntry from "./PokedexEntry.vue";
 import PokemonTable from "./PokemonTable.vue";
 import BattleField from "./BattleField.vue";
-import LoadingScreen from "./LoadingScreen.vue"; // NEU
+import LoadingScreen from "./LoadingScreen.vue";
 import type { Pokemon } from "../types/index.ts";
 
 import { Capacitor } from '@capacitor/core';
@@ -16,7 +16,6 @@ const selectedPokemon = ref<Pokemon | null>(null);
 onMounted(() => { store.loadInitialPokemon();
 
   if (Capacitor.isNativePlatform()) {
-    // Setzt die obere Statusleiste (Uhrzeit, Akku) auf helle Icons
     StatusBar.setStyle({ style: Style.Light });
 
     StatusBar.setBackgroundColor({ color: '#1d3e70' });
@@ -93,7 +92,6 @@ const closePokedex = () => { showPokedex.value = false; };
   z-index: 9999;
 }
 
-/* KORRIGIERT: Die Animation verwendet jetzt gültige CSS-Prozentwerte. */
 @keyframes move-pikachu {
   0% {
     transform: translateX(0) scaleX(1);

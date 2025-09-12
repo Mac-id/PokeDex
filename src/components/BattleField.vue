@@ -5,7 +5,6 @@ import { useBattleLogic } from "../composables/useBattleLogic";
 import { damageClassTranslations } from "../data/constants";
 import { formatMoveName } from "../utils/formatting";
 
-// NEU: Nur die Image-Pfade importieren, nicht direkt als Variablen verwenden
 import desktopBgUrl from "@/assets/battle-bg.jpg";
 import mobileBgUrl from "@/assets/mobile-battle-bg.jpg";
 
@@ -44,13 +43,11 @@ const {
 const battleAnimation = ref(true);
 const uiReady = ref(false);
 
-// NEU: Logik, um zu erkennen, ob die mobile Ansicht aktiv ist
 const isMobile = ref(window.innerWidth <= 960);
 const handleResize = () => {
   isMobile.value = window.innerWidth <= 960;
 };
 
-// NEU: Ein Computed, das den korrekten Bild-Pfad zurückgibt (für CSS background-image)
 const dynamicBackgroundUrl = computed(() => {
   return isMobile.value ? `url(${mobileBgUrl})` : `url(${desktopBgUrl})`;
 });
@@ -74,7 +71,6 @@ onMounted(() => {
     battleAnimation.value = false;
   }, 2000);
 
-  // Event Listener für die Größenänderung des Fensters hinzufügen
   window.addEventListener("resize", handleResize);
 });
 </script>
@@ -300,8 +296,7 @@ onMounted(() => {
 .battle-background {
   width: 100%;
   height: 100%;
-  /* background-image wird von Vue dynamisch gesetzt */
-  background-size: contain; /* WICHTIG: Behält Seitenverhältnis und zeigt ganzes Bild */
+  background-size: contain; 
   background-position: center top;
   background-repeat: no-repeat;
   border-radius: 0%;
@@ -484,18 +479,16 @@ onMounted(() => {
   flex-direction: column;
 }
 
-/* KORREKTUR: .pokemon-list aus dieser Regel entfernt */
 .attack-list,
 .item-list {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* 2 Spalten für Attacken und Items */
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   overflow-y: auto;
   flex-grow: 1;
   padding-right: 10px;
 }
 
-/* KORREKTUR: Eigene Flexbox-Regel für die Pokémon-Liste hinzugefügt */
 .pokemon-list {
   display: flex;
   flex-direction: row;
@@ -569,7 +562,7 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
-  width: 100px; /* Standardbreite für Desktop */
+  width: 100px;
 }
 .pokemon-option:hover {
   background-color: #d8d8d8;
@@ -855,25 +848,22 @@ onMounted(() => {
   --type-color: #ee99ac;
 }
 
-/* --- MEDIA QUERY FÜR MOBILE GERÄTE --- */
 @media (max-width: 960px) {
   .battle-screen-wrapper {
     width: 100%;
     height: 100%;
   }
 
-  /* NEU/ANGEPASST: Position des gegnerischen Pokemons (oben rechts) */
   .enemy-sprite {
-    width: 40%; /* Etwas größer, damit es besser sichtbar ist */
-    top: 23%; /* Weiter nach oben */
-    right: -5%; /* Weiter nach rechts, um mehr Platz zu lassen */
+    width: 40%; 
+    top: 23%; 
+    right: -5%; 
   }
 
-  /* NEU/ANGEPASST: Position des Spieler-Pokemons (unten links) */
   .player-sprite {
-    width: 60%; /* Etwas größer */
-    bottom: 230px; /* Weiter nach oben, damit der Battle-Menü-Knopf nicht überlappt */
-    left: -10%; /* Noch weiter nach links, damit es nicht zu mittig wird */
+    width: 60%;
+    bottom: 230px; 
+    left: -10%; 
   }
 
   .battle-screen {
@@ -887,19 +877,16 @@ onMounted(() => {
     overflow: hidden;
   }
 
-  /* FIX: Hintergrundbild für Mobile */
   .battle-background {
-    background-size: cover; /* Passt das Bild an und füllt den gesamten Bereich */
-    background-position: center center; /* Zentriert das Bild */
+    background-size: cover; 
+    background-position: center center; 
     border-radius: 0%;
   }
 
-  /* FIX: Schriftgröße für "Ein wildes XY erscheint!" auf Mobilgeräten */
   .animation-content h1 {
-    font-size: 1.5rem; /* Oder eine andere passende Größe */
+    font-size: 1.5rem; 
   }
 
-  /* Kleinere Anpassungen für die Elemente im gestreckten Layout */
   .health-bar-container {
     width: 45%;
     padding: 4px 6px;
@@ -911,107 +898,100 @@ onMounted(() => {
     font-size: 0.7rem;
   }
   .player-hp {
-    /* Muss höher sein, um Platz für das vergrößerte battle-menu zu lassen */
-    bottom: 30vh; /* Angepasst */
-    right: 3vh; /* Etwas mehr Abstand vom rechten Rand */
+    bottom: 30vh; 
+    right: 3vh; 
   }
 
-  /* FIX: battle-menu Höhe auf Mobile anpassen, damit mehr Platz für Inhalt ist */
+
   .battle-menu {
-    height: 230px; /* Oder eine andere Höhe, die du für passend hältst */
-    padding: 10px; /* Etwas weniger Padding */
+    height: 230px;
+    padding: 10px; 
   }
 
-  /* --- NEUE ANPASSUNGEN FÜR 2x2 BUTTONS UND VERKLEINERUNG --- */
-
-  /* Attacken-Liste */
   .attack-list {
-    grid-template-columns: 1fr 1fr; /* 2 Spalten für Attacken */
-    gap: 8px; /* Angepasster Abstand */
-    padding-right: 0; /* Kein zusätzlicher Platz für Scrollbar, da wir mehr Platz brauchen */
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
+    padding-right: 0;
   }
 
   .move {
-    padding: 8px; /* Weniger Padding für Attacken-Buttons */
-    font-size: 0.9rem; /* Kleinere Schriftgröße für den gesamten Button-Text */
+    padding: 8px;
+    font-size: 0.9rem; 
   }
 
   .move-name,
   .move-detail,
   .move-type-tag {
-    font-size: 0.75rem; /* Kleinere Schriftgrößen für Details */
+    font-size: 0.75rem; 
   }
 
   .move-type-tag {
-    padding: 1px 6px; /* Kleineres Padding für den Typ-Tag */
+    padding: 1px 6px; 
   }
 
   .pokemon-list {
   display: flex;
   flex-direction: row;
-  justify-content: center; /* Zentriert die Elemente horizontal */
-  flex-wrap: nowrap; /* Wichtig: Verhindert, dass Elemente in die nächste Zeile umbrechen */
-  overflow-x: auto; /* Erlaubt horizontales Scrollen, falls zu viele Elemente */
-  overflow-y: hidden; /* Verhindert vertikales Scrollen */
+  justify-content: center;
+  flex-wrap: nowrap; 
+  overflow-x: auto;
+  overflow-y: hidden; 
   gap: 8px;
   padding: 5px;
 }
   .pokemon-option {
-    width: 30%; /* Passt sich an die Spaltenbreite an */
-    padding: 3px; /* Weniger Padding */
+    width: 30%; 
+    padding: 3px;
   }
 
   .switch-sprite {
-    width: 45px; /* Kleinere Sprites */
+    width: 45px; 
     height: 45px;
   }
 
   .pokemon-info span,
   .small-health-text {
-    font-size: 0.65rem; /* Noch kleinere Schriftgröße */
+    font-size: 0.65rem; 
   }
 
   .small-health-bar {
-    width: 70px; /* Kleinere Gesundheitsleiste */
+    width: 70px; 
   }
 
-  /* Item-Menü */
   .item-list {
-    grid-template-columns: 1fr 1fr; /* 2 Spalten für Items */
-    gap: 8px; /* Angepasster Abstand */
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
     padding: 5px;
   }
 
   .item-option {
-    padding: 6px 8px; /* Weniger Padding für Item-Optionen */
+    padding: 6px 8px;
     grid-template-columns: 1fr auto;
   }
 
   .item-name,
   .item-count {
-    font-size: 0.8rem; /* Kleinere Schrift für Items */
+    font-size: 0.8rem; 
   }
 
   .item-description {
-    font-size: 0.65rem; /* Noch kleinere Schrift */
+    font-size: 0.65rem; 
   }
 
-  /* Überschriften in den Menüs */
   .attack-menu h3,
   .pokemon-switch-menu h3,wa
   .item-menu h3 {
-    font-size: 1rem; /* Etwas kleinere Überschriften */
+    font-size: 1rem; 
   }
 
-  /* Zurück-Button */
   .back-btn {
     padding: 8px 12px;
     font-size: 0.9rem;
   }
 
-  /* Allgemeine Button-Anpassungen, falls nötig */
+ 
   .menu-options button {
-    font-size: 0.9rem; /* Kleinere Schriftgröße für die Hauptmenü-Buttons */
+    font-size: 0.9rem; 
     padding: 8px 12px;
   }
 }

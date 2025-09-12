@@ -119,7 +119,6 @@ const getEffectiveness = (move: Move): string => {
 </template>
 
 <style scoped>
-/* Bestehende Stile, die unverändert bleiben */
 .edit-content { background-color: #e4c932; border: 4px solid #2070cc; border-radius: 10px !important; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); }
 .headline { font-family: 'Pokemon GB', sans-serif; color: #2070cc; display: flex; justify-content: space-between; }
 .preview-container { padding: 1rem; background-color: rgba(0,0,0,0.1); }
@@ -127,30 +126,27 @@ const getEffectiveness = (move: Move): string => {
 .actions { padding: 16px; background-color: rgba(0,0,0,0.1); }
 .normal { --type-color: #a8a878; } .fire { --type-color: #f08030; } .water { --type-color: #6890f0; } .electric { --type-color: #f8d030; } .grass { --type-color: #78c850; } .ice { --type-color: #98d8d8; } .fighting { --type-color: #c03028; } .poison { --type-color: #a040a0; } .ground { --type-color: #e0c068; } .flying { --type-color: #a890f0; } .psychic { --type-color: #f85888; } .bug { --type-color: #a8b820; } .rock { --type-color: #b8a038; } .ghost { --type-color: #705898; } .dragon { --type-color: #7038f8; } .dark { --type-color: #705848; } .steel { --type-color: #b8b8d0; } .fairy { --type-color: #ee99ac; }
 
-/* --- ANGEPASSTE STILE FÜR ATTACKEN-ANZEIGE (Wie im Kampf-Layout) --- */
 .moves-section {
   background-color: rgba(255, 255, 255, 0.2);
   border-radius: 5px;
-  overflow-y: auto; /* Scrollbar, wenn zu viele Attacken */
-  max-height: 250px; /* Max. Höhe, bevor gescrollt wird */
-  padding: 5px; /* Etwas Padding um die Liste */
+  overflow-y: auto; 
+  max-height: 250px; 
+  padding: 5px; 
 }
 
-/* CONTAINER für Attacken-Liste (vom BattleField inspiriert) */
 .moves-list-battlefield-style {
-  display: flex; /* Standardmäßig Flex-Container für vertikale Anordnung (Desktop) */
+  display: flex; 
   flex-direction: column;
-  gap: 8px; /* Abstand zwischen den einzelnen Attacken */
-  padding-right: 5px; /* Platz für Scrollbar */
+  gap: 8px;
+  padding-right: 5px; 
 }
 
-/* Einzelne Attacken-Box (vom BattleField inspiriert) */
 .move-battlefield-style {
-  background-color: rgba(60, 60, 60, 0.8); /* Dunklerer Hintergrund wie im Kampf */
+  background-color: rgba(60, 60, 60, 0.8); 
   padding: 10px;
   border-radius: 8px;
-  border-left: 5px solid var(--type-color, #a8a878); /* Typ-Farben-Streifen links */
-  color: white; /* Weißer Text auf dunklem Hintergrund */
+  border-left: 5px solid var(--type-color, #a8a878); 
+  color: white;
   display: flex;
   align-items: center;
 }
@@ -199,8 +195,6 @@ const getEffectiveness = (move: Move): string => {
   font-weight: bold;
 }
 
-
-/* --- MOBILE-ANPASSUNGEN FÜR AKTIONEN-BUTTONS IM DIALOG (unverändert) --- */
 .mobile-actions-layout {
   display: flex;
   flex-wrap: wrap;
@@ -229,53 +223,51 @@ const getEffectiveness = (move: Move): string => {
 }
 
 
-/* --- MEDIA QUERY FÜR MOBILE GERÄTE (Angriffs-Buttons im 2x2 Raster) --- */
-@media (max-width: 600px) { /* Angriffs-Buttons werden auf kleineren Bildschirmen angepasst */
-  /* Anpassung der Attacken-Liste auf ein 2x2 Grid */
+@media (max-width: 600px) { 
+
   .moves-list-battlefield-style {
-    display: grid; /* Ändere von flex zu grid */
-    grid-template-columns: 1fr 1fr; /* 2 Spalten gleicher Breite */
-    gap: 8px; /* Abstand zwischen den Grid-Elementen */
-    padding-right: 0; /* Kein zusätzlicher Padding für Scrollbar hier, da Grid es handhabt */
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
+    padding-right: 0; 
   }
 
-  /* Anpassung der einzelnen Attacken-Boxen im Grid */
+ 
   .move-battlefield-style {
-    padding: 8px; /* Etwas weniger Padding */
-    min-height: 60px; /* Mindesthöhe für bessere Klickbarkeit */
+    padding: 8px;
+    min-height: 60px; 
   }
 
   .move-name-battlefield-style {
-    font-size: 0.9rem; /* Kleinere Schrift für den Namen */
+    font-size: 0.9rem; 
   }
 
   .move-detail-battlefield-style,
   .move-type-tag-battlefield-style {
-    font-size: 0.7rem; /* Kleinere Schrift für Details und Typ */
+    font-size: 0.7rem; 
   }
 
   .move-type-tag-battlefield-style {
-    padding: 1px 6px; /* Kleineres Padding für den Typ-Tag */
+    padding: 1px 6px; 
   }
 
-  /* Sicherstellen, dass die Aktionen-Buttons bei sehr kleinen Bildschirmen in eine Spalte gehen */
+  
   .action-btn {
     min-width: unset;
     width: 100%;
   }
 
   .mobile-actions-layout {
-    flex-direction: column; /* Buttons gehen in eine Spalte */
+    flex-direction: column; 
   }
 
   .mobile-spacer {
-    display: none; /* Spacer wird bei reiner Spaltenansicht unsichtbar */
+    display: none; 
   }
 }
 
-/* Media Query für allgemeine mobile Anpassungen, wenn nicht speziell für Buttons */
+
 @media (max-width: 400px) {
-  /* Sicherstellen, dass die Aktionen-Buttons auch hier noch gut aussehen */
   .action-btn {
     min-width: unset;
     width: 100%;

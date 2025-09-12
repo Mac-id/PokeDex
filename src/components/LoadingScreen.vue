@@ -3,7 +3,6 @@ import { usePokemonStore } from '../store/pokemonStore';
 import { storeToRefs } from 'pinia';
 
 const store = usePokemonStore();
-// Mache die State-Properties reaktiv, damit das Template sie aktualisiert
 const { loadingProgress, loadingStatusText } = storeToRefs(store);
 </script>
 
@@ -33,7 +32,7 @@ const { loadingProgress, loadingStatusText } = storeToRefs(store);
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: #1d3e70; /* Dunkelblau, passend zum Theme */
+  background-color: #1d3e70; 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -75,7 +74,7 @@ const { loadingProgress, loadingStatusText } = storeToRefs(store);
 .status-text {
   margin-top: 15px;
   font-size: 0.9rem;
-  min-height: 20px; /* Verhindert Springen des Layouts */
+  min-height: 20px; 
   color: rgba(255, 255, 255, 0.8);
 }
 </style>

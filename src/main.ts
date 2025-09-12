@@ -3,7 +3,6 @@ import { createPinia } from 'pinia';
 import App from './components/App.vue';
 import router from './router';
 
-// Vuetify-Importe
 import 'vuetify/styles';
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
@@ -20,7 +19,6 @@ const vuetify = createVuetify({
         colors: {
           primary: '#2070cc',
           secondary: '#ffcc24',
-          // FIX: Die 'surface'-Farbe wird entfernt, damit Komponenten wieder standardmäßig weiß sind.
         }
       }
     }
